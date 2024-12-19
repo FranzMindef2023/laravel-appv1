@@ -45,7 +45,7 @@ class StorePersonasRequest extends FormRequest
             'celular' => 'nullable|string|max:15',
             'fechnacimeinto' => 'required|date',
             'fechaegreso'=> 'required|date',
-            'gsanguineo' => 'nullable|string|max:3',
+            'gsanguineo' => 'nullable|string|max:10',
             'carnetmil' =>[
                 'nullable','string','max:20',
                 Rule::unique('personas', 'carnetmil')->ignore($id, 'idpersona') 

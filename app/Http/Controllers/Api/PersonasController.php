@@ -22,23 +22,36 @@ class PersonasController extends Controller
         try {
             // Obtener todas las personas junto con sus relaciones utilizando join
             $personas = DB::table('personas')
-                ->leftJoin('fuerzas', 'personas.idfuerza', '=', 'fuerzas.idfuerza')
-                ->leftJoin('especialidades', 'personas.idespecialidad', '=', 'especialidades.idespecialidad')
-                ->leftJoin('grados', 'personas.idgrado', '=', 'grados.idgrado')
-                ->leftJoin('sexos', 'personas.idsexo', '=', 'sexos.idsexo')
-                ->leftJoin('armas', 'personas.idarma', '=', 'armas.idarma')
-                ->leftJoin('statuscv', 'personas.idcv', '=', 'statuscv.idcv')
-                ->select(
-                    'personas.*',
-                    'fuerzas.fuerza as fuerza',
-                    'especialidades.especialidad as especialidad',
-                    'grados.grado as grado',
-                    'grados.abregrado',
-                    'sexos.sexo as sexo',
-                    'armas.arma as arma',
-                    'statuscv.name as status_civil'
-                )
-                ->get();
+                    ->leftJoin('fuerzas', 'personas.idfuerza', '=', 'fuerzas.idfuerza')
+                    ->leftJoin('especialidades', 'personas.idespecialidad', '=', 'especialidades.idespecialidad')
+                    ->leftJoin('grados', 'personas.idgrado', '=', 'grados.idgrado')
+                    ->leftJoin('sexos', 'personas.idsexo', '=', 'sexos.idsexo')
+                    ->leftJoin('armas', 'personas.idarma', '=', 'armas.idarma')
+                    ->leftJoin('statuscvs', 'personas.idcv', '=', 'statuscvs.idcv')
+                    ->select(
+                        'personas.*',
+                        'personas.idpersona as id',
+                        'fuerzas.fuerza as fuerza',
+                        'especialidades.especialidad as especialidad',
+                        'grados.grado as grado',
+                        'grados.abregrado',
+                        'sexos.sexo as sexo',
+                        'armas.arma as arma',
+                        'statuscvs.name as status_civil',
+                        DB::raw("
+                            CASE
+                                WHEN grados.categoria = 'OG' THEN CONCAT(grados.abregrado, ' ', personas.appaterno, ' ', personas.appaterno, ' ', personas.nombres)
+                                WHEN personas.idarma = 1 AND personas.idespecialidad != 1 THEN CONCAT(grados.abregrado, ' ', especialidades.especialidad, ' ', personas.appaterno, ' ', personas.apmaterno, ' ', personas.nombres)
+                                WHEN personas.idarma != 1 AND personas.idespecialidad = 1 THEN CONCAT(grados.abregrado, ' ', armas.abrearma, ' ', personas.appaterno, ' ', personas.apmaterno, ' ', personas.nombres)
+                                WHEN personas.idarma = 1 AND personas.idespecialidad = 1 THEN CONCAT(grados.abregrado, ' ', personas.appaterno, ' ', personas.apmaterno, ' ', personas.nombres)
+                                ELSE CONCAT(grados.abregrado, ' ', especialidades.especialidad, ' ', personas.appaterno, ' ', personas.apmaterno, ' ', personas.nombres)
+                            END AS name
+                        "),
+                        DB::raw("TO_CHAR(personas.fechnacimeinto, 'DD-MM-YYYY') as fechnacimeinto"),
+                        DB::raw("TO_CHAR(personas.fechaegreso, 'DD-MM-YYYY') as fechaegreso")
+                    )
+                    ->orderBy('personas.idgrado', 'asc')
+                    ->get();
 
             // Verificar si no se encontraron personas
             if ($personas->isEmpty()) {
@@ -111,7 +124,7 @@ class PersonasController extends Controller
                 ->leftJoin('grados', 'personas.idgrado', '=', 'grados.idgrado')
                 ->leftJoin('sexos', 'personas.idsexo', '=', 'sexos.idsexo')
                 ->leftJoin('armas', 'personas.idarma', '=', 'armas.idarma')
-                ->leftJoin('statuscv', 'personas.idcv', '=', 'statuscv.idcv')
+                ->leftJoin('statuscvs', 'personas.idcv', '=', 'statuscvs.idcv')
                 ->select(
                     'personas.*',
                     'fuerzas.fuerza',
@@ -121,7 +134,7 @@ class PersonasController extends Controller
                     'sexos.sexo',
                     'armas.arma',
                     'armas.abrearma',
-                    'statuscv.name as status_civil'
+                    'statuscvs.name as status_civil'
                 )
                 ->where('personas.idpersona', $id)
                 ->first();
