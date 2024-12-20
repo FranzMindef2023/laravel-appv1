@@ -21,7 +21,9 @@ class OrganizacionController extends Controller
     {
         try {
             // Obtener todas las organizaciones de la base de datos
-            $organizaciones = Organizacion::all();
+            $organizaciones = Organizacion::orderBy('idpadre')
+            ->orderBy('idorg')
+            ->get();
         
             // Verificar si no se encontraron organizaciones
             if ($organizaciones->isEmpty()) {

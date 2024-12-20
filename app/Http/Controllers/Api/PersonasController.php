@@ -48,7 +48,9 @@ class PersonasController extends Controller
                             END AS name
                         "),
                         DB::raw("TO_CHAR(personas.fechnacimeinto, 'DD-MM-YYYY') as fechnacimeinto"),
-                        DB::raw("TO_CHAR(personas.fechaegreso, 'DD-MM-YYYY') as fechaegreso")
+                        DB::raw("TO_CHAR(personas.fechaegreso, 'DD-MM-YYYY') as fechaegreso"),
+                        DB::raw("CAST(personas.ci AS TEXT) AS ci"),
+                        DB::raw("CAST(personas.celular AS TEXT) AS celular")
                     )
                     ->orderBy('personas.idgrado', 'asc')
                     ->get();
