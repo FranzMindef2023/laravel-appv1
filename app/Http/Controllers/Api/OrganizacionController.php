@@ -190,19 +190,134 @@ class OrganizacionController extends Controller
             ], 500);
         }
     }
-    public function obtenerHijos(int $id){
+    // public function obtenerHijos(int $id){
+    //     try {
+    //         // Buscar la organización padre por su ID
+    //         $organizacionPadre = Organizacion::findOrFail($id);
+
+    //         // Obtener las organizaciones hijas
+    //         $hijos = $organizacionPadre->hijos;
+
+    //         // Verificar si tiene hijos
+    //         if ($hijos->isEmpty()) {
+    //             return response()->json([
+    //                 'status' => false,
+    //                 'message' => 'No se encontraron organizaciones hijas para el ID '.$id.' proporcionado.'
+    //             ], 404);
+    //         }
+
+    //         return response()->json([
+    //             'status' => true,
+    //             'message' => 'Organizaciones hijas encontradas.',
+    //             'data' => $hijos
+    //         ], 200);
+    //     } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+    //         return response()->json([
+    //             'status' => false,
+    //             'message' => 'Organización no encontrada.'
+    //         ], 404);
+    //     } catch (\Exception $e) {
+    //         return response()->json([
+    //             'status' => false,
+    //             'message' => 'Error al obtener las organizaciones hijas: ' . $e->getMessage()
+    //         ], 500);
+    //     }
+    // }
+    public function obtenerHijos(int $id)
+    {
         try {
             // Buscar la organización padre por su ID
             $organizacionPadre = Organizacion::findOrFail($id);
 
-            // Obtener las organizaciones hijas
-            $hijos = $organizacionPadre->hijos;
+            // Inicializar la colección de descendientes
+            $hijos = collect();
+
+            // Manejar rangos específicos
+            if ($id >= 1100 && $id <= 1199) {
+                $hijos = Organizacion::whereBetween('idorg', [1100, 1199])
+                    ->orderBy('idorg', 'asc')
+                    ->get();
+            } elseif ($id >= 1200 && $id <= 1299) {
+                $hijos = Organizacion::whereBetween('idorg', [1200, 1299])
+                    ->orderBy('idorg', 'asc')
+                    ->get();
+            } elseif ($id >= 1300 && $id <= 1399) {
+                $hijos = Organizacion::whereBetween('idorg', [1300, 1399])
+                    ->orderBy('idorg', 'asc')
+                    ->get();
+            } elseif ($id >= 1400 && $id <= 1499) {
+                $hijos = Organizacion::whereBetween('idorg', [1400, 1499])
+                    ->orderBy('idorg', 'asc')
+                    ->get();
+            } elseif ($id >= 2000 && $id <= 2999) {
+                $hijos = Organizacion::whereBetween('idorg', [2000, 2999])
+                    ->orderBy('idorg', 'asc')
+                    ->get();
+            } elseif ($id >= 3000 && $id <= 3999) {
+                $hijos = Organizacion::whereBetween('idorg', [3000, 3999])
+                    ->orderBy('idorg', 'asc')
+                    ->get();
+            } elseif ($id >= 4000 && $id <= 4999) {
+                $hijos = Organizacion::whereBetween('idorg', [4000, 4999])
+                    ->orderBy('idorg', 'asc')
+                    ->get();
+            } else {
+                // Obtener solo hijos directos para otros IDs
+                $hijos = $organizacionPadre->hijos()->orderBy('idorg', 'asc')->get();
+
+                // Verificar si tiene hijos directos
+                if ($hijos->isEmpty()) {
+                    // IDs específicos que deben retornar el mismo dato como hijo
+                    $idsEspecificos = [1000, 1010, 1020, 1030, 1040];
+                    if (in_array($id, $idsEspecificos)) {
+                        $hijos = collect([$organizacionPadre]);
+                    } else {
+                        return response()->json([
+                            'status' => false,
+                            'message' => 'No se encontraron organizaciones hijas para el ID ' . $id . ' proporcionado.'
+                        ], 404);
+                    }
+                }
+            }
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Organizaciones hijas encontradas.',
+                'data' => $hijos
+            ], 200);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Organización no encontrada.'
+            ], 404);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Error al obtener las organizaciones hijas: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function obtenerHijastros(int $id)
+    {
+        try {
+            // Obtener la organización padre
+            $organizacionPadre = Organizacion::findOrFail($id);
+
+             // Obtener las organizaciones hijas
+                $hijos = $organizacionPadre->hijos->map(function ($hijo) {
+                    return [
+                        'idhijastro' => $hijo->idorg, // Renombrar idorg a idhijastro
+                        'nomorg' => $hijo->nomorg,
+                        'idpadre' => $hijo->idpadre,
+                    ];
+                });
 
             // Verificar si tiene hijos
             if ($hijos->isEmpty()) {
                 return response()->json([
                     'status' => false,
-                    'message' => 'No se encontraron organizaciones hijas para el ID '.$id.' proporcionado.'
+                    'message' => 'No se encontraron organizaciones hijas para el ID ' . $id . ' proporcionado.'
                 ], 404);
             }
 
@@ -223,5 +338,35 @@ class OrganizacionController extends Controller
             ], 500);
         }
     }
+
+    public function obtenerOrganizacionesPadres()
+    {
+        try {
+            // Obtener todas las organizaciones donde idpadre = 0 y renombrar idorg como idorgani
+            $organizaciones = Organizacion::where('idpadre', 0)
+            ->select(['idorg as idorgani', 'nomorg']) // Renombra y selecciona otros campos necesarios
+            ->get();
+
+            // Verificar si hay resultados
+            if ($organizaciones->isEmpty()) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'No se encontraron organizaciones padres (idpadre = 0).'
+                ], 404);
+            }
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Organizaciones padres encontradas.',
+                'data' => $organizaciones
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Error al obtener las organizaciones padres: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
 
 }

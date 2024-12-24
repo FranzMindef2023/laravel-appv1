@@ -61,6 +61,8 @@ Route::middleware(['jwt.verify'])->group(function () {
     Route::apiResource('roles', RolesController::class);
     Route::apiResource('organizacion', OrganizacionController::class);
     Route::get('organizacion/{id}/hijos', [OrganizacionController::class, 'obtenerHijos']);
+    Route::get('obtenerOrganizacionesPadres', [OrganizacionController::class, 'obtenerOrganizacionesPadres']);
+    Route::get('obtenerHijastros/{id}/hijos', [OrganizacionController::class, 'obtenerHijastros']);
 
     Route::apiResource('puestos', PuestosController::class);
     Route::apiResource('tiponovedades', TipoNovedadesController::class);
