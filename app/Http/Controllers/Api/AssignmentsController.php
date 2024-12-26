@@ -189,4 +189,41 @@ class AssignmentsController extends Controller
     {
         //
     }
+    /**
+     * Display the specified resource.
+     */
+    public function showAssignments(int $id)
+    {
+        try {
+            // Buscar el registro por idpersona donde enddate sea null
+            $asignaciones = Assignments::where('idpersona', $id)
+                ->whereNull('enddate')
+                ->first();
+            
+            // Verificar si no se encontró un registro
+            if (!$asignaciones) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'No se encontraron asignaciones para la persona con idpersona: ' . $id
+                ], 404);
+            }
+            // Dar formato a startdate
+            $asignaciones->startdate = date('d-m-Y', strtotime($asignaciones->startdate));
+            // Retornar el registro encontrado
+            return response()->json([
+                'status' => true,
+                'message' => 'Asignación encontrada',
+                'data' => $asignaciones
+            ], 200); // Código de estado 200 para éxito
+            
+        } catch (\Exception $e) {
+            // Manejo de errores generales
+            return response()->json([
+                'status' => false,
+                'message' => 'Error al mostrar la asignación: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+
 }
