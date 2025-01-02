@@ -344,7 +344,7 @@ class OrganizacionController extends Controller
         try {
             // Obtener todas las organizaciones donde idpadre = 0 y renombrar idorg como idorgani
             $organizaciones = Organizacion::where('idpadre', 0)
-            ->select(['idorg as idorgani', 'nomorg']) // Renombra y selecciona otros campos necesarios
+            ->select(['idorg as idorgani', 'nomorg','sigla','idpadre']) // Renombra y selecciona otros campos necesarios
             ->get();
 
             // Verificar si hay resultados
@@ -367,6 +367,14 @@ class OrganizacionController extends Controller
             ], 500);
         }
     }
+    public function getOrganigrama()
+    {
+        $organizacion = Organizacion::with('children')->get();
 
+        return response()->json([
+            'status' => true,
+            'data' => $organizacion
+        ]);
+    }
 
 }

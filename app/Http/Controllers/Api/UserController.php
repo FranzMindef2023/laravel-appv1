@@ -9,8 +9,9 @@ use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Validator;
 use Carbon\Carbon;
-use App\Models\User; // <- Importación de User 
+use App\Models\User; // <- Importación de User  
 use App\Models\UserRole;
+use App\Models\UserAccesos;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\DB;
 use App\Models\Roles; 
@@ -275,8 +276,161 @@ class UserController extends Controller
             ], 500);
         }
     }
+    /**
+     * Remove the specified resource from storage.
+    */
+    public function asignarAccesos(Request $request){
+        try {
+            // Validar los datos del request
+            $validatedData = $request->validate([
+                'iduser' => 'required|numeric',
+                'idorg' => 'required|numeric'
+            ]);
+
+            // Obtener el iduser del request
+            $id = $validatedData['iduser'];
+
+            // Buscar los roles por usuario y eliminarlos
+            UserAccesos::where('iduser', $id)->delete();
+
+            // Crear el nuevo rol para el usuario
+            $UserAccesos = UserAccesos::create([
+                'iduser' => $id,
+                'idorg' => $validatedData['idorg']
+            ]);
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Rol asignado correctamente',
+                'data' => $UserAccesos
+            ], 200); // Código de estado 200 para éxito
+        } catch (\Throwable $th) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Error al registrar el rol de usuario: ' . $th->getMessage()
+            ], 500); // Código de estado 500 para errores generales
+        }
+    }
     public function pruebasGas(){
         return 'conectado api';
     }
+    /**
+     * // Obtener todos los usuarios activos con sus roles y puesto
+     */
+    public function userIndex()
+    {
+        try {
+            
+            $users = User::where('status', true) // Filtrar usuarios activos
+                ->with(['roles', 'puesto']) // Cargar roles y puesto relacionados
+                ->get()
+                ->map(function ($user) {
+                    // Concatenar grado, nombres, appaterno y apmaterno como name
+                    $user->name = trim("{$user->grado} {$user->nombres} {$user->appaterno} {$user->apmaterno}");
 
+                    // Aplanar iduser como id
+                    $user->id = $user->iduser;
+
+                    // Aplanar los datos del rol
+                    $user->idrol = $user->roles->isNotEmpty() ? $user->roles->first()->idrol : null;
+                    $user->rol = $user->roles->isNotEmpty() ? $user->roles->first()->rol : null;
+
+                    // Aplanar los datos del puesto
+                    $user->nompuesto = $user->puesto ? $user->puesto->nompuesto : null;
+
+                    // Eliminar datos innecesarios para aplanar la estructura
+                    unset($user->roles, $user->puesto);
+
+                    return $user;
+                });
+
+            // Verificar si no se encontraron usuarios
+            if ($users->isEmpty()) {
+                throw new \Illuminate\Database\Eloquent\ModelNotFoundException('No se encontraron usuarios activos.');
+            }
+
+            // Retornar una respuesta exitosa con los datos transformados
+            return response()->json([
+                'status' => true,
+                'message' => 'Usuarios activos encontrados',
+                'data' => $users
+            ], 200);
+
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            // Manejar el caso cuando no se encuentran usuarios (404)
+            return response()->json([
+                'status' => false,
+                'message' => $e->getMessage()
+            ], 404);
+        } catch (\Exception $e) {
+            // Manejo de errores generales (500)
+            return response()->json([
+                'status' => false,
+                'message' => 'Error al obtener los usuarios: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+    public function showUserAccesses(int $iduser, int $idpadre)
+    {
+        try {
+            // Obtener hijos directos
+            $allOrgIds = \DB::table('organizacion')
+                ->select('idorg')
+                ->where('idpadre', '=', $idpadre)
+                ->pluck('idorg')
+                ->toArray();
+
+            if (empty($allOrgIds)) {
+                return response()->json([
+                    'status' => true,
+                    'message' => 'No hay organizaciones hijas para el idpadre proporcionado.',
+                    'data' => []
+                ], 200);
+            }
+
+            // Accesos asignados
+            $assignedAccesses = \DB::table('organizacion')
+                ->join('user_accesos', 'organizacion.idorg', '=', 'user_accesos.idorg')
+                ->where('user_accesos.iduser', $iduser)
+                ->whereIn('organizacion.idorg', $allOrgIds)
+                ->where('organizacion.status', true)
+                ->select('organizacion.idorg AS idorgani', 'organizacion.nomorg','organizacion.sigla', 'organizacion.idpadre',\DB::raw('1 as assigned'))
+                ->get();
+
+            // Accesos no asignados
+            $unassignedAccesses = \DB::table('organizacion')
+                ->leftJoin('user_accesos', 'organizacion.idorg', '=', 'user_accesos.idorg')
+                ->whereNull('user_accesos.idorg') // Filtrar las organizaciones no asignadas
+                ->whereIn('organizacion.idorg', $allOrgIds) // Solo hijos directos del idpadre
+                ->where('organizacion.status', true) // Organizaciones activas
+                ->select('organizacion.idorg AS idorgani', 'organizacion.nomorg','organizacion.sigla', 'organizacion.idpadre', \DB::raw('0 as assigned'))
+                ->get();
+
+            // Combinar resultados
+            $accesses = $assignedAccesses->merge($unassignedAccesses);
+
+            // Ordenar los resultados combinados por idorg
+            $sortedAccesses = $accesses->sortBy('idorg')->values();
+
+            if ($sortedAccesses->isEmpty()) {
+                return response()->json([
+                    'status' => true,
+                    'message' => 'No se encontraron accesos para el usuario en las organizaciones hijas.',
+                    'data' => []
+                ], 200);
+            }
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Accesos encontrados para el usuario.',
+                'data' => $sortedAccesses
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Error al obtener los accesos: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 }

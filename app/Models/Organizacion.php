@@ -28,4 +28,14 @@ class Organizacion extends Model implements Auditable
     {
         return $this->hasMany(Organizacion::class, 'idpadre', 'idorg');
     }
+    // Relación para obtener el padre de una organización
+    public function parent()
+    {
+        return $this->belongsTo(Organizacion::class, 'idpadre', 'idorg');
+    }
+    // Relación para obtener los hijos de una organización
+    public function children()
+    {
+        return $this->hasMany(Organizacion::class, 'idpadre', 'idorg');
+    }
 }

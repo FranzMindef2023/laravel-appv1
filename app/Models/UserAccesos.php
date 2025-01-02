@@ -7,24 +7,27 @@ use Illuminate\Database\Eloquent\Model; // Importa la clase Model de Eloquent
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use Tymon\JWTAuth\Contracts\JWTSubject;
-use OwenIt\Auditing\Contracts\Auditable;
+// use OwenIt\Auditing\Contracts\Auditable;
 
-class Roles extends Model implements Auditable // Extiende de Model
+class UserAccesos extends Model  // Extiende de Model
 {
-    use \OwenIt\Auditing\Auditable;
+    // use \OwenIt\Auditing\Auditable;
     use HasApiTokens, HasFactory, Notifiable;
 
     // Establecer la clave primaria
-    protected $primaryKey = 'idrol';
-
+    // protected $primaryKey = 'idrol';
+    public $incrementing = false; // Deshabilitar claves incrementales automáticas
+    protected $primaryKey = null; // Indicar que no hay clave primaria
+    // Deshabilitar la auditoría en este modelo
+    protected $auditEnabled = false;
     /**
      * The attributes that are mass assignable.
      *
      * @var array<int, string>
      */
     protected $fillable = [
-        'rol',         // Nombre del rol
-        'status'
+        'iduser',         // Nombre del rol
+        'idorg'
     ];
 
     /**
@@ -46,16 +49,4 @@ class Roles extends Model implements Auditable // Extiende de Model
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
     ];
-    // App\Models\Role.php
-    public function users()
-    {
-        return $this->belongsToMany(
-            User::class,     // Modelo relacionado
-            'user_roles',    // Tabla intermedia
-            'idrol',         // Clave foránea en la tabla intermedia para este modelo
-            'iduser'         // Clave foránea en la tabla intermedia para el modelo relacionado
-        );
-    }
-
-
 }

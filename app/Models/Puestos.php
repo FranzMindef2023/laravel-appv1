@@ -20,4 +20,10 @@ class Puestos extends Model implements Auditable
         'nompuesto',
         'status'
     ];
+    // App\Models\Puestos.php
+    public function users()
+    {
+        return $this->hasMany(User::class, 'idpuesto', 'idpuesto');
+    }
+
 }

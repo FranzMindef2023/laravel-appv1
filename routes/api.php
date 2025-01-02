@@ -61,6 +61,7 @@ Route::middleware(['jwt.verify'])->group(function () {
     Route::apiResource('roles', RolesController::class);
     Route::apiResource('organizacion', OrganizacionController::class);
     Route::get('organizacion/{id}/hijos', [OrganizacionController::class, 'obtenerHijos']);
+    Route::get('organigrama', [OrganizacionController::class, 'getOrganigrama']);
     Route::get('obtenerOrganizacionesPadres', [OrganizacionController::class, 'obtenerOrganizacionesPadres']);
     Route::get('obtenerHijastros/{id}/hijos', [OrganizacionController::class, 'obtenerHijastros']);
 
@@ -74,6 +75,9 @@ Route::middleware(['jwt.verify'])->group(function () {
     Route::apiResource('novedades', NovedadesController::class);
     Route::get('indexVigentes', [NovedadesController::class, 'indexVigentes']);
     Route::post('roldeusuario', [UserController::class,'asignarRoles']);
+    Route::post('asignarAccesos', [UserController::class,'asignarAccesos']);
+    Route::get('userindex', [UserController::class,'userIndex']);
+    Route::get('showuseraccesses/{iduser}/{idorg}', [UserController::class,'showUserAccesses']);
 
     Route::apiResource('armas', ArmasController::class);
     Route::apiResource('especialidades', EspecialidadesController::class);

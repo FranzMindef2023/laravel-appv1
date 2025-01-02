@@ -56,6 +56,22 @@ class User extends Authenticatable implements JWTSubject,Auditable
         'idorg',
         'idpuesto'
     ];
+    // App\Models\User.php
+    public function roles()
+    {
+        return $this->belongsToMany(
+            Roles::class,    // Modelo relacionado
+            'user_roles',    // Tabla intermedia
+            'iduser',        // Clave foránea en la tabla intermedia para el modelo actual
+            'idrol'          // Clave foránea en la tabla intermedia para el modelo relacionado
+        );
+    }
+    // App\Models\User.php
+    public function puesto()
+    {
+        return $this->belongsTo(Puestos::class, 'idpuesto', 'idpuesto');
+    }
+
 
     /**
      * The attributes that should be hidden for serialization.
@@ -76,4 +92,6 @@ class User extends Authenticatable implements JWTSubject,Auditable
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
     ];
+   
+
 }
