@@ -78,7 +78,76 @@ class PersonasController extends Controller
             ], 500);
         }
     }
-
+    // Obtener todas las personas activas junto con sus relaciones
+    public function indexPersonal(){
+        try {
+            
+            $personas = DB::table('personas')
+                ->leftJoin('fuerzas', 'personas.idfuerza', '=', 'fuerzas.idfuerza')
+                ->leftJoin('especialidades', 'personas.idespecialidad', '=', 'especialidades.idespecialidad')
+                ->leftJoin('grados', 'personas.idgrado', '=', 'grados.idgrado')
+                ->leftJoin('sexos', 'personas.idsexo', '=', 'sexos.idsexo')
+                ->leftJoin('armas', 'personas.idarma', '=', 'armas.idarma')
+                ->leftJoin('statuscvs', 'personas.idcv', '=', 'statuscvs.idcv')
+                ->leftJoin('assignments', 'personas.idpersona', '=', 'assignments.idpersona')
+                ->leftJoin('organizacion', 'assignments.idorg', '=', 'organizacion.idorg')
+                ->leftJoin('puestos', 'assignments.idpuesto', '=', 'puestos.idpuesto')
+                ->select(
+                    'personas.*',
+                    'personas.idpersona as id',
+                    'fuerzas.fuerza as fuerza',
+                    'especialidades.especialidad as especialidad',
+                    'grados.grado as grado',
+                    'grados.abregrado',
+                    'sexos.sexo as sexo',
+                    'armas.arma as arma',
+                    'statuscvs.name as status_civil',
+                    'organizacion.nomorg as organizacion',
+                    'puestos.nompuesto as puesto',
+                    DB::raw("
+                        CASE
+                            WHEN grados.categoria = 'OG' THEN CONCAT(grados.abregrado, ' ', personas.appaterno, ' ', personas.apmaterno, ' ', personas.nombres)
+                            WHEN personas.idarma = 1 AND personas.idespecialidad != 1 THEN CONCAT(grados.abregrado, ' ', especialidades.especialidad, ' ', personas.appaterno, ' ', personas.apmaterno, ' ', personas.nombres)
+                            WHEN personas.idarma != 1 AND personas.idespecialidad = 1 THEN CONCAT(grados.abregrado, ' ', armas.abrearma, ' ', personas.appaterno, ' ', personas.apmaterno, ' ', personas.nombres)
+                            WHEN personas.idarma = 1 AND personas.idespecialidad = 1 THEN CONCAT(grados.abregrado, ' ', personas.appaterno, ' ', personas.apmaterno, ' ', personas.nombres)
+                            ELSE CONCAT(grados.abregrado, ' ', especialidades.especialidad, ' ', personas.appaterno, ' ', personas.apmaterno, ' ', personas.nombres)
+                        END AS name
+                    "),
+                    DB::raw("TO_CHAR(personas.fechnacimeinto, 'DD/MM/YYYY') as fechnacimeinto"),
+                    DB::raw("TO_CHAR(personas.fechaegreso, 'DD/MM/YYYY') as fechaegreso"),
+                    DB::raw("CAST(personas.ci AS TEXT) AS ci"),
+                    DB::raw("CAST(personas.celular AS TEXT) AS celular"),
+                    DB::raw("DATE_PART('year', AGE(personas.fechnacimeinto)) AS edad")
+                )
+                ->whereNull('assignments.enddate')
+                ->whereNull('assignments.motivofin')
+                ->orderBy('personas.idgrado', 'asc')
+                ->get();
+    
+            // Verificar si no se encontraron personas
+            if ($personas->isEmpty()) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'No se encontraron personas activas.'
+                ], 404);
+            }
+    
+            // Retornar una respuesta exitosa con los datos encontrados
+            return response()->json([
+                'status' => true,
+                'message' => 'Personas activas encontradas',
+                'data' => $personas
+            ], 200);
+    
+        } catch (\Exception $e) {
+            // Manejo de errores generales
+            return response()->json([
+                'status' => false,
+                'message' => 'Error al obtener las personas: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+    
 
 
     /**

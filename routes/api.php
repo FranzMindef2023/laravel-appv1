@@ -68,6 +68,7 @@ Route::middleware(['jwt.verify'])->group(function () {
     Route::apiResource('puestos', PuestosController::class);
     Route::apiResource('tiponovedades', TipoNovedadesController::class);
     Route::apiResource('persona', PersonasController::class);
+    Route::get('indexpersonal', [PersonasController::class, 'indexPersonal']);
     Route::apiResource('assignments', AssignmentsController::class);
     Route::post('changeAssignment', [AssignmentsController::class, 'changeAssignment']);
     Route::get('showAssignments/{id}', [AssignmentsController::class, 'showAssignments']);
@@ -75,7 +76,8 @@ Route::middleware(['jwt.verify'])->group(function () {
     Route::apiResource('novedades', NovedadesController::class);
     Route::get('indexVigentes', [NovedadesController::class, 'indexVigentes']);
     Route::post('roldeusuario', [UserController::class,'asignarRoles']);
-    Route::post('asignarAccesos', [UserController::class,'asignarAccesos']);
+    Route::post('registraracceso', [UserController::class,'registrarAcceso']);
+    Route::delete('eliminaracceso/{iduser}/{idorg}', [UserController::class,'eliminarAcceso']);
     Route::get('userindex', [UserController::class,'userIndex']);
     Route::get('showuseraccesses/{iduser}/{idorg}', [UserController::class,'showUserAccesses']);
 

@@ -277,40 +277,63 @@ class UserController extends Controller
         }
     }
     /**
-     * Remove the specified resource from storage.
-    */
-    public function asignarAccesos(Request $request){
+     * Register a new access for a user.
+     */
+    public function registrarAcceso(Request $request) {
         try {
             // Validar los datos del request
             $validatedData = $request->validate([
                 'iduser' => 'required|numeric',
-                'idorg' => 'required|numeric'
+                'idorg' => 'required|numeric',
             ]);
 
-            // Obtener el iduser del request
-            $id = $validatedData['iduser'];
-
-            // Buscar los roles por usuario y eliminarlos
-            UserAccesos::where('iduser', $id)->delete();
-
-            // Crear el nuevo rol para el usuario
+            // Crear el nuevo acceso para el usuario
             $UserAccesos = UserAccesos::create([
-                'iduser' => $id,
-                'idorg' => $validatedData['idorg']
+                'iduser' => $validatedData['iduser'],
+                'idorg' => $validatedData['idorg'],
             ]);
 
             return response()->json([
                 'status' => true,
-                'message' => 'Rol asignado correctamente',
-                'data' => $UserAccesos
-            ], 200); // Código de estado 200 para éxito
+                'message' => 'Acceso registrado correctamente',
+                'data' => $UserAccesos,
+            ], 200); // Código de estado 200 para creación exitosa
         } catch (\Throwable $th) {
             return response()->json([
                 'status' => false,
-                'message' => 'Error al registrar el rol de usuario: ' . $th->getMessage()
+                'message' => 'Error al registrar el acceso: ' . $th->getMessage(),
             ], 500); // Código de estado 500 para errores generales
         }
     }
+    /**
+     * Remove a specified access from a user.
+     */
+    public function eliminarAcceso(int $iduser, int $idorg) {
+        try {
+            // Buscar y eliminar el acceso
+            $deleted = UserAccesos::where('iduser', $iduser)
+                ->where('idorg', $idorg)
+                ->delete();
+
+            if ($deleted) {
+                return response()->json([
+                    'status' => true,
+                    'message' => 'Acceso eliminado correctamente',
+                ], 200); // Código de estado 200 para éxito
+            } else {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'El acceso no existe o ya fue eliminado',
+                ], 404); // Código de estado 404 si no se encuentra el recurso
+            }
+        } catch (\Throwable $th) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Error al eliminar el acceso: ' . $th->getMessage(),
+            ], 500); // Código de estado 500 para errores generales
+        }
+    }
+
     public function pruebasGas(){
         return 'conectado api';
     }
@@ -373,64 +396,71 @@ class UserController extends Controller
     public function showUserAccesses(int $iduser, int $idpadre)
     {
         try {
-            // Obtener hijos directos
-            $allOrgIds = \DB::table('organizacion')
-                ->select('idorg')
+            // Obtener hijos directos del nodo padre
+            $childOrganizations = \DB::table('organizacion')
                 ->where('idpadre', '=', $idpadre)
+                ->where('status', true) // Solo organizaciones activas
                 ->pluck('idorg')
                 ->toArray();
 
-            if (empty($allOrgIds)) {
+            if (empty($childOrganizations)) {
                 return response()->json([
                     'status' => true,
-                    'message' => 'No hay organizaciones hijas para el idpadre proporcionado.',
+                    'message' => 'No hay organizaciones hijas para el ID proporcionado.',
                     'data' => []
                 ], 200);
             }
 
-            // Accesos asignados
+            // Obtener accesos asignados
             $assignedAccesses = \DB::table('organizacion')
                 ->join('user_accesos', 'organizacion.idorg', '=', 'user_accesos.idorg')
                 ->where('user_accesos.iduser', $iduser)
-                ->whereIn('organizacion.idorg', $allOrgIds)
-                ->where('organizacion.status', true)
-                ->select('organizacion.idorg AS idorgani', 'organizacion.nomorg','organizacion.sigla', 'organizacion.idpadre',\DB::raw('1 as assigned'))
+                ->whereIn('organizacion.idorg', $childOrganizations)
+                ->select(
+                    'organizacion.idorg AS idorgani',
+                    'organizacion.nomorg',
+                    'organizacion.sigla',
+                    'organizacion.idpadre',
+                    \DB::raw('1 as assigned') // Marcado como asignado
+                )
                 ->get();
 
-            // Accesos no asignados
+            // Obtener accesos no asignados
             $unassignedAccesses = \DB::table('organizacion')
-                ->leftJoin('user_accesos', 'organizacion.idorg', '=', 'user_accesos.idorg')
-                ->whereNull('user_accesos.idorg') // Filtrar las organizaciones no asignadas
-                ->whereIn('organizacion.idorg', $allOrgIds) // Solo hijos directos del idpadre
-                ->where('organizacion.status', true) // Organizaciones activas
-                ->select('organizacion.idorg AS idorgani', 'organizacion.nomorg','organizacion.sigla', 'organizacion.idpadre', \DB::raw('0 as assigned'))
+                ->leftJoin('user_accesos', function ($join) use ($iduser) {
+                    $join->on('organizacion.idorg', '=', 'user_accesos.idorg')
+                        ->where('user_accesos.iduser', '=', $iduser);
+                })
+                ->whereNull('user_accesos.idorg') // Solo organizaciones no asignadas
+                ->whereIn('organizacion.idorg', $childOrganizations)
+                ->select(
+                    'organizacion.idorg AS idorgani',
+                    'organizacion.nomorg',
+                    'organizacion.sigla',
+                    'organizacion.idpadre',
+                    \DB::raw('0 as assigned') // Marcado como no asignado
+                )
                 ->get();
 
-            // Combinar resultados
+            // Combinar accesos asignados y no asignados
             $accesses = $assignedAccesses->merge($unassignedAccesses);
 
-            // Ordenar los resultados combinados por idorg
-            $sortedAccesses = $accesses->sortBy('idorg')->values();
-
-            if ($sortedAccesses->isEmpty()) {
-                return response()->json([
-                    'status' => true,
-                    'message' => 'No se encontraron accesos para el usuario en las organizaciones hijas.',
-                    'data' => []
-                ], 200);
-            }
+            // Ordenar los resultados por idorg
+            $sortedAccesses = $accesses->sortBy('idorgani')->values();
 
             return response()->json([
                 'status' => true,
-                'message' => 'Accesos encontrados para el usuario.',
+                'message' => 'Accesos encontrados.',
                 'data' => $sortedAccesses
             ], 200);
 
         } catch (\Exception $e) {
+            // Manejo de errores
             return response()->json([
                 'status' => false,
                 'message' => 'Error al obtener los accesos: ' . $e->getMessage()
             ], 500);
         }
     }
+
 }
