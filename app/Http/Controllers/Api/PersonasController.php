@@ -113,8 +113,8 @@ class PersonasController extends Controller
                             ELSE CONCAT(grados.abregrado, ' ', especialidades.especialidad, ' ', personas.appaterno, ' ', personas.apmaterno, ' ', personas.nombres)
                         END AS name
                     "),
-                    DB::raw("TO_CHAR(personas.fechnacimeinto, 'DD/MM/YYYY') as fechnacimeinto"),
-                    DB::raw("TO_CHAR(personas.fechaegreso, 'DD/MM/YYYY') as fechaegreso"),
+                    DB::raw("TO_CHAR(personas.fechnacimeinto, 'DD-MM-YYYY') as fechnacimeinto"),
+                    DB::raw("TO_CHAR(personas.fechaegreso, 'DD-MM-YYYY') as fechaegreso"),
                     DB::raw("CAST(personas.ci AS TEXT) AS ci"),
                     DB::raw("CAST(personas.celular AS TEXT) AS celular"),
                     DB::raw("DATE_PART('year', AGE(personas.fechnacimeinto)) AS edad")
@@ -147,9 +147,82 @@ class PersonasController extends Controller
             ], 500);
         }
     }
+    // Obtener una persona específica por su id
+    public function showPersonal($idpersona) {
+        try {
+            $persona = DB::table('personas')
+                ->leftJoin('fuerzas', 'personas.idfuerza', '=', 'fuerzas.idfuerza')
+                ->leftJoin('especialidades', 'personas.idespecialidad', '=', 'especialidades.idespecialidad')
+                ->leftJoin('grados', 'personas.idgrado', '=', 'grados.idgrado')
+                ->leftJoin('sexos', 'personas.idsexo', '=', 'sexos.idsexo')
+                ->leftJoin('armas', 'personas.idarma', '=', 'armas.idarma')
+                ->leftJoin('statuscvs', 'personas.idcv', '=', 'statuscvs.idcv')
+                ->leftJoin('assignments', 'personas.idpersona', '=', 'assignments.idpersona')
+                ->leftJoin('organizacion', 'assignments.idorg', '=', 'organizacion.idorg')
+                ->leftJoin('puestos', 'assignments.idpuesto', '=', 'puestos.idpuesto')
+                ->leftJoin('situaciones', 'personas.idsituacion', '=', 'situaciones.idsituacion')
+                ->leftJoin('gestiones', 'personas.idpersona', '=', 'gestiones.idpersona') // Unión con la tabla gestiones
+                ->select(
+                    'personas.*',
+                    'assignments.idassig',
+                    'personas.idpersona as id',
+                    'fuerzas.fuerza as fuerza',
+                    'especialidades.especialidad as especialidad',
+                    'grados.grado as grado',
+                    'grados.abregrado',
+                    'sexos.sexo as sexo',
+                    'armas.arma as arma',
+                    'statuscvs.name as status_civil',
+                    'organizacion.nomorg as organizacion',
+                    'puestos.nompuesto as puesto',
+                    'situaciones.situacion',
+                    'gestiones.gestion as gestion_ingreso', // Gestión de ingreso
+                    DB::raw("
+                        CASE
+                            WHEN grados.categoria = 'OG' THEN CONCAT(grados.abregrado, ' ', personas.appaterno, ' ', personas.apmaterno, ' ', personas.nombres)
+                            WHEN personas.idarma = 1 AND personas.idespecialidad != 1 THEN CONCAT(grados.abregrado, ' ', especialidades.especialidad, ' ', personas.appaterno, ' ', personas.apmaterno, ' ', personas.nombres)
+                            WHEN personas.idarma != 1 AND personas.idespecialidad = 1 THEN CONCAT(grados.abregrado, ' ', armas.abrearma, ' ', personas.appaterno, ' ', personas.apmaterno, ' ', personas.nombres)
+                            WHEN personas.idarma = 1 AND personas.idespecialidad = 1 THEN CONCAT(grados.abregrado, ' ', personas.appaterno, ' ', personas.apmaterno, ' ', personas.nombres)
+                            ELSE CONCAT(grados.abregrado, ' ', especialidades.especialidad, ' ', personas.appaterno, ' ', personas.apmaterno, ' ', personas.nombres)
+                        END AS namepersona
+                    "),
+                    DB::raw("TO_CHAR(personas.fechnacimeinto, 'DD/MM/YYYY') as fechnacimeinto"),
+                    DB::raw("TO_CHAR(gestiones.fechaingreso, 'DD/MM/YYYY') as fechaingreso"),
+                    DB::raw("TO_CHAR(personas.fechaegreso, 'DD-MM-YYYY') as fechaegreso"),
+                    DB::raw("CAST(personas.ci AS TEXT) AS ci"),
+                    DB::raw("CAST(personas.celular AS TEXT) AS celular"),
+                    DB::raw("
+                        CASE
+                            WHEN gestiones.gestion IS NOT NULL THEN (EXTRACT(YEAR FROM CURRENT_DATE) - gestiones.gestion)
+                            ELSE NULL
+                        END AS gestiones_permanencia
+                    ") // Cálculo de años de permanencia basado en la gestión de ingreso
+                )
+                ->where('personas.ci', '=', $idpersona) // Filtrar por el idpersona específico
+                ->whereNull('assignments.enddate')
+                ->whereNull('assignments.motivofin')
+                ->first(); // Obtener solo una persona
     
-
-
+            if (!$persona) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'No se encontró la persona con el CI especificado.'
+                ], 404);
+            }
+    
+            return response()->json([
+                'status' => true,
+                'message' => 'Persona encontrada',
+                'data' => $persona
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Error al obtener la persona: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+    
     /**
      * Show the form for creating a new resource.
      */
@@ -271,7 +344,7 @@ class PersonasController extends Controller
             // Manejo de errores generales
             return response()->json([
                 'status' => false,
-                'message' => 'Error al actualizar la Persona: ' . $e->getMessage()
+                'messageshowuseraccesses' => 'Error al actualizar la Persona: ' . $e->getMessage()
             ], 500);
         }
     }
@@ -283,4 +356,138 @@ class PersonasController extends Controller
     {
         //
     }
+    /**
+     * Desvinculados de la gestion actual.
+     */
+    public function getDesvinculadosGestionActual() {
+        try {
+            $desvinculados = DB::table('personas')
+                ->leftJoin('fuerzas', 'personas.idfuerza', '=', 'fuerzas.idfuerza')
+                ->leftJoin('especialidades', 'personas.idespecialidad', '=', 'especialidades.idespecialidad')
+                ->leftJoin('grados', 'personas.idgrado', '=', 'grados.idgrado')
+                ->leftJoin('sexos', 'personas.idsexo', '=', 'sexos.idsexo')
+                ->leftJoin('armas', 'personas.idarma', '=', 'armas.idarma')
+                ->leftJoin('statuscvs', 'personas.idcv', '=', 'statuscvs.idcv')
+                ->leftJoin('assignments', function ($join) {
+                    $join->on('personas.idpersona', '=', 'assignments.idpersona')
+                         ->whereRaw('assignments.enddate = (SELECT MAX(a.enddate) FROM assignments a WHERE a.idpersona = personas.idpersona)');
+                })
+                ->leftJoin('organizacion', 'assignments.idorg', '=', 'organizacion.idorg')
+                ->leftJoin('puestos', 'assignments.idpuesto', '=', 'puestos.idpuesto')
+                ->leftJoin('situaciones', 'personas.idsituacion', '=', 'situaciones.idsituacion')
+                ->leftJoin('gestiones', function ($join) {
+                    $join->on('personas.idpersona', '=', 'gestiones.idpersona')
+                         ->whereRaw('gestiones.fechadesvin = assignments.enddate');
+                })
+                ->select(
+                    'personas.*',
+                    'personas.idpersona as id',
+                    'assignments.idassig',
+                    'assignments.startdate',
+                    'assignments.enddate',
+                    'gestiones.fechaingreso',
+                    'gestiones.fechadesvin',
+                    'gestiones.gestion as gestion_ingreso',
+                    'fuerzas.fuerza',
+                    'especialidades.especialidad',
+                    'grados.grado',
+                    'grados.abregrado',
+                    'sexos.sexo',
+                    'armas.arma',
+                    'statuscvs.name as status_civil',
+                    'organizacion.nomorg as organizacion',
+                    'puestos.nompuesto as puesto',
+                    DB::raw("
+                        CASE
+                            WHEN grados.categoria = 'OG' THEN CONCAT(grados.abregrado, ' ', personas.appaterno, ' ', personas.apmaterno, ' ', personas.nombres)
+                            WHEN personas.idarma = 1 AND personas.idespecialidad != 1 THEN CONCAT(grados.abregrado, ' ', especialidades.especialidad, ' ', personas.appaterno, ' ', personas.apmaterno, ' ', personas.nombres)
+                            WHEN personas.idarma != 1 AND personas.idespecialidad = 1 THEN CONCAT(grados.abregrado, ' ', armas.abrearma, ' ', personas.appaterno, ' ', personas.apmaterno, ' ', personas.nombres)
+                            WHEN personas.idarma = 1 AND personas.idespecialidad = 1 THEN CONCAT(grados.abregrado, ' ', personas.appaterno, ' ', personas.apmaterno, ' ', personas.nombres)
+                            ELSE CONCAT(grados.abregrado, ' ', especialidades.especialidad, ' ', personas.appaterno, ' ', personas.apmaterno, ' ', personas.nombres)
+                        END AS name
+                    "),
+                    DB::raw("TO_CHAR(gestiones.fechaingreso, 'DD/MM/YYYY') as fechaingreso"),
+                    DB::raw("TO_CHAR(gestiones.fechadesvin, 'DD/MM/YYYY') as fechadesvin")
+                )
+                ->whereNotNull('gestiones.fechadesvin') // Solo registros con fecha de desvinculación
+                ->whereYear('gestiones.fechadesvin', '=', DB::raw('EXTRACT(YEAR FROM CURRENT_DATE)')) // Filtrar por la gestión actual
+                ->get();
+    
+            if ($desvinculados->isEmpty()) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'No se encontraron personas desvinculadas durante la gestión actual.'
+                ], 404);
+            }
+    
+            return response()->json([
+                'status' => true,
+                'message' => 'Personas desvinculadas durante la gestión actual encontradas',
+                'data' => $desvinculados
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Error al obtener las personas desvinculadas: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+    /**
+     * Listar personas que acceden a las organizaciones con permisos.
+     */
+    public function listPeopleByUserAccess($iduser) {
+        try {
+            // Obtener todos los idorg permitidos para el usuario
+            $accessibleOrgs = DB::table('user_accesos')
+                ->where('iduser', $iduser)
+                ->pluck('idorg');
+    
+            if ($accessibleOrgs->isEmpty()) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'El usuario no tiene accesos asignados.',
+                    'data' => []
+                ], 403);
+            }
+    
+            // Obtener las personas que pertenecen a los idorg permitidos
+            $people = DB::table('personas')
+                ->join('assignments', 'personas.idpersona', '=', 'assignments.idpersona')
+                ->join('organizacion', 'assignments.idorg', '=', 'organizacion.idorg')
+                ->select(
+                    'personas.*',
+                    'assignments.idassig',
+                    'organizacion.nomorg as organizacion',
+                    'assignments.idorg as org_id',
+                    'assignments.startdate',
+                    'assignments.enddate',
+                    DB::raw("TO_CHAR(assignments.startdate, 'DD/MM/YYYY') as startdate_formatted"),
+                    DB::raw("TO_CHAR(assignments.enddate, 'DD/MM/YYYY') as enddate_formatted")
+                )
+                ->whereIn('assignments.idorg', $accessibleOrgs)
+                ->whereNull('assignments.enddate')
+                ->get();
+    
+            if ($people->isEmpty()) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'No se encontraron personas para los accesos asignados al usuario.',
+                    'data' => []
+                ], 404);
+            }
+    
+            return response()->json([
+                'status' => true,
+                'message' => 'Personas encontradas',
+                'data' => $people
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Error al obtener las personas: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+    
+       
 }

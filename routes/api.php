@@ -69,6 +69,10 @@ Route::middleware(['jwt.verify'])->group(function () {
     Route::apiResource('tiponovedades', TipoNovedadesController::class);
     Route::apiResource('persona', PersonasController::class);
     Route::get('indexpersonal', [PersonasController::class, 'indexPersonal']);
+    Route::get('showpersonal/{id}', [PersonasController::class, 'showPersonal']);
+    Route::get('getdesvinculados', [PersonasController::class, 'getDesvinculadosGestionActual']);
+    Route::get('listpersonasbyuseraccess/{id}', [PersonasController::class, 'listPeopleByUserAccess']);
+
     Route::apiResource('assignments', AssignmentsController::class);
     Route::post('changeAssignment', [AssignmentsController::class, 'changeAssignment']);
     Route::get('showAssignments/{id}', [AssignmentsController::class, 'showAssignments']);

@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Validator;
 use Carbon\Carbon;
 use App\Models\Assignments; 
+use App\Models\Gestiones; 
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 class AssignmentsController extends Controller
@@ -39,7 +40,13 @@ class AssignmentsController extends Controller
             $response = Assignments::create(array_merge(
                 $request->validated()
             ));
-
+            // Guardar datos en la tabla Gestiones
+            Gestiones::create([
+                'idpersona' => $request->idpersona,
+                'fechaingreso' => $request->startdate,
+                'gestion' => $request->gestion,
+                'motivo' => $request->motivo
+            ]);
             return response()->json([
                 'status' => true,
                 'message' => 'Persona asignada correctamente',
@@ -115,30 +122,45 @@ class AssignmentsController extends Controller
     public function update(StoreAssignmentsRequest $request, int $id)
     {
         try {
-            // Buscar el puesto por su ID
-            $puesto = Assignments::where('idassig', $id)->firstOrFail();
-        
-            // Actualizar los datos del puesto con los datos validados
-            $puesto->update($request->validated());
-        
+            // Buscar la asignación por su ID
+            $assignment = Assignments::findOrFail($id);
+    
+            // Actualizar los datos en la tabla Assignments
+            $assignment->update($request->validated());
+    
+            // Actualizar datos en la tabla Gestiones
+            $gestion = Gestiones::where('idpersona', $request->idpersona)
+                                ->whereNull('fechadesvin') // Filtrar por gestiones activas
+                                ->whereNull('motivofin') // Filtrar por gestiones activas
+                                ->firstOrFail();
+    
+            $gestion->update([
+                'fechaingreso' => $request->startdate,
+                'gestion' => $request->gestion,
+                'motivo' => $request->motivo
+            ]);
+    
             // Retornar una respuesta exitosa con los datos actualizados
             return response()->json([
                 'status' => true,
-                'message' => 'La asignacion de la persona actualizado correctamente',
-                'data' => $puesto
-            ], 200); // Código de estado 200 para una actualización exitosa
-        
+                'message' => 'La asignación y gestión actualizadas correctamente',
+                'data' => [
+                    'assignment' => $assignment,
+                    'gestion' => $gestion
+                ]
+            ], 200);
+    
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-            // Si no se encuentra el ID, retornar un error 404
+            // Si no se encuentra la asignación o gestión, retornar un error 404
             return response()->json([
                 'status' => false,
-                'message' => 'asignacion de la persona no encontrado'
+                'message' => 'La asignación o gestión no se encontró'
             ], 404);
         } catch (\Exception $e) {
             // Manejo de errores generales
             return response()->json([
                 'status' => false,
-                'message' => 'Error al actualizar la  asignacion de la persona: ' . $e->getMessage()
+                'message' => 'Error al actualizar la asignación o gestión: ' . $e->getMessage()
             ], 500);
         }
     }
@@ -149,7 +171,8 @@ class AssignmentsController extends Controller
         try {
             // Validar que se haya proporcionado la nueva fecha de finalización
             $request->validate([
-                'enddate' => 'required|date'
+                'enddate' => 'required|date',
+                'motivofin'=>'nullable|string|max:255'
             ]);
 
             // Buscar la asignación por su ID (idassig)
@@ -157,9 +180,19 @@ class AssignmentsController extends Controller
 
             // Actualizar solo el campo enddate
             $assignment->update([
-                'enddate' => $request->input('enddate')
+                'enddate' => $request->input('enddate'),
+                'motivofin'=>$request->input('motivofin')
             ]);
-
+            // Actualizar datos en la tabla Gestiones
+            $gestion = Gestiones::where('idpersona', $request->idpersona)
+                                ->whereNull('fechadesvin') // Filtrar por gestiones activas
+                                ->whereNull('motivofin') // Filtrar por gestiones activas
+                                ->firstOrFail();
+    
+            $gestion->update([
+                'fechadesvin' => $request->input('enddate'),
+                'motivofin' => $request->input('motivofin')
+            ]);
             // Retornar una respuesta exitosa con los datos actualizados
             return response()->json([
                 'status' => true,
