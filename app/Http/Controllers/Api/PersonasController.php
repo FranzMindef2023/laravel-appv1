@@ -441,7 +441,7 @@ class PersonasController extends Controller
             $accessibleOrgs = DB::table('user_accesos')
                 ->where('iduser', $iduser)
                 ->pluck('idorg');
-    
+
             if ($accessibleOrgs->isEmpty()) {
                 return response()->json([
                     'status' => false,
@@ -449,25 +449,51 @@ class PersonasController extends Controller
                     'data' => []
                 ], 403);
             }
-    
-            // Obtener las personas que pertenecen a los idorg permitidos
+
+            // Obtener las personas que pertenecen a los idorg permitidos con datos adicionales
             $people = DB::table('personas')
-                ->join('assignments', 'personas.idpersona', '=', 'assignments.idpersona')
-                ->join('organizacion', 'assignments.idorg', '=', 'organizacion.idorg')
+                ->leftJoin('fuerzas', 'personas.idfuerza', '=', 'fuerzas.idfuerza')
+                ->leftJoin('especialidades', 'personas.idespecialidad', '=', 'especialidades.idespecialidad')
+                ->leftJoin('grados', 'personas.idgrado', '=', 'grados.idgrado')
+                ->leftJoin('sexos', 'personas.idsexo', '=', 'sexos.idsexo')
+                ->leftJoin('armas', 'personas.idarma', '=', 'armas.idarma')
+                ->leftJoin('statuscvs', 'personas.idcv', '=', 'statuscvs.idcv')
+                ->leftJoin('assignments', 'personas.idpersona', '=', 'assignments.idpersona')
+                ->leftJoin('organizacion', 'assignments.idorg', '=', 'organizacion.idorg')
+                ->leftJoin('puestos', 'assignments.idpuesto', '=', 'puestos.idpuesto')
                 ->select(
                     'personas.*',
-                    'assignments.idassig',
+                    'personas.idpersona as id',
+                    'fuerzas.fuerza as fuerza',
+                    'especialidades.especialidad as especialidad',
+                    'grados.grado as grado',
+                    'grados.abregrado',
+                    'sexos.sexo as sexo',
+                    'armas.arma as arma',
+                    'statuscvs.name as status_civil',
                     'organizacion.nomorg as organizacion',
-                    'assignments.idorg as org_id',
-                    'assignments.startdate',
-                    'assignments.enddate',
-                    DB::raw("TO_CHAR(assignments.startdate, 'DD/MM/YYYY') as startdate_formatted"),
-                    DB::raw("TO_CHAR(assignments.enddate, 'DD/MM/YYYY') as enddate_formatted")
+                    'puestos.nompuesto as puesto',
+                    DB::raw("
+                        CASE
+                            WHEN grados.categoria = 'OG' THEN CONCAT(grados.abregrado, ' ', personas.appaterno, ' ', personas.apmaterno, ' ', personas.nombres)
+                            WHEN personas.idarma = 1 AND personas.idespecialidad != 1 THEN CONCAT(grados.abregrado, ' ', especialidades.especialidad, ' ', personas.appaterno, ' ', personas.apmaterno, ' ', personas.nombres)
+                            WHEN personas.idarma != 1 AND personas.idespecialidad = 1 THEN CONCAT(grados.abregrado, ' ', armas.abrearma, ' ', personas.appaterno, ' ', personas.apmaterno, ' ', personas.nombres)
+                            WHEN personas.idarma = 1 AND personas.idespecialidad = 1 THEN CONCAT(grados.abregrado, ' ', personas.appaterno, ' ', personas.apmaterno, ' ', personas.nombres)
+                            ELSE CONCAT(grados.abregrado, ' ', especialidades.especialidad, ' ', personas.appaterno, ' ', personas.apmaterno, ' ', personas.nombres)
+                        END AS name
+                    "),
+                    DB::raw("TO_CHAR(personas.fechnacimeinto, 'DD-MM-YYYY') as fechnacimeinto"),
+                    DB::raw("TO_CHAR(personas.fechaegreso, 'DD-MM-YYYY') as fechaegreso"),
+                    DB::raw("CAST(personas.ci AS TEXT) AS ci"),
+                    DB::raw("CAST(personas.celular AS TEXT) AS celular"),
+                    DB::raw("DATE_PART('year', AGE(personas.fechnacimeinto)) AS edad")
                 )
                 ->whereIn('assignments.idorg', $accessibleOrgs)
                 ->whereNull('assignments.enddate')
+                ->whereNull('assignments.motivofin')
+                ->orderBy('personas.idgrado', 'asc')
                 ->get();
-    
+
             if ($people->isEmpty()) {
                 return response()->json([
                     'status' => false,
@@ -475,7 +501,7 @@ class PersonasController extends Controller
                     'data' => []
                 ], 404);
             }
-    
+
             return response()->json([
                 'status' => true,
                 'message' => 'Personas encontradas',
@@ -488,6 +514,7 @@ class PersonasController extends Controller
             ], 500);
         }
     }
+
     
        
 }
