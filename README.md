@@ -85,7 +85,7 @@ PARA CREAR LAS TABLASE MIGRACION
 ## php artisan make:migration armas_table 
 */
 /*
-CRERA CONTROLADORES DESDE EL TERMINAL
+CREAR CONTROLADORES DESDE EL TERMINAL
 ## php artisan make:controller Api/ExampleController --resource
 ## php artisan make:model Example
 ## php artisan make:seeder TipoNovedadSeeder

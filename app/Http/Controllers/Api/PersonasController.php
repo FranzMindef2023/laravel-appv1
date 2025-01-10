@@ -463,6 +463,7 @@ class PersonasController extends Controller
                 ->leftJoin('puestos', 'assignments.idpuesto', '=', 'puestos.idpuesto')
                 ->select(
                     'personas.*',
+                    'assignments.idassig',
                     'personas.idpersona as id',
                     'fuerzas.fuerza as fuerza',
                     'especialidades.especialidad as especialidad',
