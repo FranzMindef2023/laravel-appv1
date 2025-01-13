@@ -14,19 +14,19 @@ class tiponovSeeder extends Seeder
     public function run(): void
     {
         $novedades = [
-            ['novedad' => 'Comisión', 'status' => true,'created_at' => now(),'updated_at' => now()],
-            ['novedad' => 'Vacación', 'status' => true,'created_at' => now(),'updated_at' => now()],
-            ['novedad' => 'Permiso Declaración Jurada', 'status' => true,'created_at' => now(),'updated_at' => now()],
-            ['novedad' => 'Permiso', 'status' => true,'created_at' => now(),'updated_at' => now()],
-            ['novedad' => 'Permiso Paternidad', 'status' => true,'created_at' => now(),'updated_at' => now()],
-            ['novedad' => 'Permiso Matrimonio', 'status' => true,'created_at' => now(),'updated_at' => now()],
-            ['novedad' => 'Permiso Fallecimiento', 'status' => true,'created_at' => now(),'updated_at' => now()],
-            ['novedad' => 'Baja Médica', 'status' => true,'created_at' => now(),'updated_at' => now()],
-            ['novedad' => 'Internado Cosmil', 'status' => true,'created_at' => now(),'updated_at' => now()],
-            ['novedad' => 'Baja Prenatal', 'status' => true,'created_at' => now(),'updated_at' => now()],
-            ['novedad' => 'Baja Post Natal', 'status' => true,'created_at' => now(),'updated_at' => now()],
-            ['novedad' => 'Guardia', 'status' => true,'created_at' => now(),'updated_at' => now()],
-            ['novedad' => 'Falta', 'status' => true,'created_at' => now(),'updated_at' => now()]
+            ['novedad' => 'COMISIÓN', 'status' => true, 'created_at' => now(), 'updated_at' => now()],
+            ['novedad' => 'VACACIÓN', 'status' => true, 'created_at' => now(), 'updated_at' => now()],
+            ['novedad' => 'PERMISO DECLARACIÓN JURADA', 'status' => true, 'created_at' => now(), 'updated_at' => now()],
+            ['novedad' => 'PERMISO', 'status' => true, 'created_at' => now(), 'updated_at' => now()],
+            ['novedad' => 'PERMISO PATERNIDAD', 'status' => true, 'created_at' => now(), 'updated_at' => now()],
+            ['novedad' => 'PERMISO MATRIMONIO', 'status' => true, 'created_at' => now(), 'updated_at' => now()],
+            ['novedad' => 'PERMISO FALLECIMIENTO', 'status' => true, 'created_at' => now(), 'updated_at' => now()],
+            ['novedad' => 'BAJA MÉDICA', 'status' => true, 'created_at' => now(), 'updated_at' => now()],
+            ['novedad' => 'INTERNADO COSMIL', 'status' => true, 'created_at' => now(), 'updated_at' => now()],
+            ['novedad' => 'BAJA PRENATAL', 'status' => true, 'created_at' => now(), 'updated_at' => now()],
+            ['novedad' => 'BAJA POST NATAL', 'status' => true, 'created_at' => now(), 'updated_at' => now()],
+            ['novedad' => 'GUARDIA', 'status' => true, 'created_at' => now(), 'updated_at' => now()],
+            ['novedad' => 'FALTA', 'status' => true, 'created_at' => now(), 'updated_at' => now()],
         ];
 
         DB::table('tiponovedad')->insert($novedades);
