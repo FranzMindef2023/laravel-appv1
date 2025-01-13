@@ -72,6 +72,7 @@ Route::middleware(['jwt.verify'])->group(function () {
     Route::get('showpersonal/{id}', [PersonasController::class, 'showPersonal']);
     Route::get('getdesvinculados', [PersonasController::class, 'getDesvinculadosGestionActual']);
     Route::get('listpersonasbyuseraccess/{id}', [PersonasController::class, 'listPeopleByUserAccess']);
+    Route::get('listpersonaspermisos/{id}', [PersonasController::class, 'listPeopleByUserPermisos']);
 
     Route::apiResource('assignments', AssignmentsController::class);
     Route::post('changeAssignment', [AssignmentsController::class, 'changeAssignment']);

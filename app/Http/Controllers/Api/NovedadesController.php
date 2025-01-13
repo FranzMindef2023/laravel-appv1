@@ -70,9 +70,9 @@ class NovedadesController extends Controller
             if ($novedadesVigentes->isNotEmpty()) {
                 return response()->json([
                     'status' => false,
-                    'message' => 'Ya existe una novedad vigente para este usuario.',
+                    'message' => 'Ya existe un permiso vigente para este usuario.',
                     'data' => $novedadesVigentes // Incluye el tipo de novedad relacionado
-                ], 400); // Código de estado 400 para solicitud inválida
+                ], 404); // Código de estado 400 para solicitud inválida
             }
 
             // Crear la nueva novedad si no existe una vigente.
@@ -83,14 +83,14 @@ class NovedadesController extends Controller
 
             return response()->json([
                 'status' => true,
-                'message' => 'Novedad registrada correctamente.',
+                'message' => 'Permiso registrada correctamente.',
                 'data' => $response
             ], 200);
             
         } catch (\Throwable $th) {
             return response()->json([
                 'status' => false,
-                'message' => 'Error al registrar la novedad: ' . $th->getMessage()
+                'message' => 'Error al registrar el Permiso: ' . $th->getMessage()
             ], 500); // Código de estado 500 para errores generales
         }
     }
