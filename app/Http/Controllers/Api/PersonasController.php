@@ -614,5 +614,101 @@ class PersonasController extends Controller
             ], 500);
         }
     }
+    /**
+     * Listar personas que acceden a las organizaciones con permisos.
+     */
+    public function listPeoplePartediaria($iduser) {
+        try {
+            // Obtener todos los idorg permitidos para el usuario
+            $accessibleOrgs = DB::table('user_accesos')
+                ->where('iduser', $iduser)
+                ->pluck('idorg');
+    
+            if ($accessibleOrgs->isEmpty()) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'El usuario no tiene accesos asignados.',
+                    'data' => []
+                ], 403);
+            }
+    
+            // Obtener las personas que pertenecen a los idorg permitidos con datos adicionales
+            $people = DB::table('personas')
+                ->leftJoin('fuerzas', 'personas.idfuerza', '=', 'fuerzas.idfuerza')
+                ->leftJoin('especialidades', 'personas.idespecialidad', '=', 'especialidades.idespecialidad')
+                ->leftJoin('grados', 'personas.idgrado', '=', 'grados.idgrado')
+                ->leftJoin('sexos', 'personas.idsexo', '=', 'sexos.idsexo')
+                ->leftJoin('armas', 'personas.idarma', '=', 'armas.idarma')
+                ->leftJoin('statuscvs', 'personas.idcv', '=', 'statuscvs.idcv')
+                ->leftJoin('assignments', 'personas.idpersona', '=', 'assignments.idpersona')
+                ->leftJoin('organizacion', 'assignments.idorg', '=', 'organizacion.idorg')
+                ->leftJoin('puestos', 'assignments.idpuesto', '=', 'puestos.idpuesto')
+                ->leftJoin('novedades', 'assignments.idassig', '=', 'novedades.idassig')
+                ->select(
+                    'personas.*',
+                    'assignments.idassig',
+                    'personas.idpersona as id',
+                    'fuerzas.fuerza as fuerza',
+                    'especialidades.especialidad as especialidad',
+                    'grados.grado as grado',
+                    'grados.abregrado',
+                    'sexos.sexo as sexo',
+                    'armas.arma as arma',
+                    'statuscvs.name as status_civil',
+                    'organizacion.nomorg as organizacion',
+                    'puestos.nompuesto as puesto',
+                    DB::raw("
+                        CASE
+                            WHEN grados.categoria = 'OG' THEN CONCAT(grados.abregrado, ' ', personas.appaterno, ' ', personas.apmaterno, ' ', personas.nombres)
+                            WHEN personas.idarma = 1 AND personas.idespecialidad != 1 THEN CONCAT(grados.abregrado, ' ', especialidades.especialidad, ' ', personas.appaterno, ' ', personas.apmaterno, ' ', personas.nombres)
+                            WHEN personas.idarma != 1 AND personas.idespecialidad = 1 THEN CONCAT(grados.abregrado, ' ', armas.abrearma, ' ', personas.appaterno, ' ', personas.apmaterno, ' ', personas.nombres)
+                            WHEN personas.idarma = 1 AND personas.idespecialidad = 1 THEN CONCAT(grados.abregrado, ' ', personas.appaterno, ' ', personas.apmaterno, ' ', personas.nombres)
+                            ELSE CONCAT(grados.abregrado, ' ', especialidades.especialidad, ' ', personas.appaterno, ' ', personas.apmaterno, ' ', personas.nombres)
+                        END AS name
+                    "),
+                    DB::raw("TO_CHAR(personas.fechnacimeinto, 'DD-MM-YYYY') as fechnacimeinto"),
+                    DB::raw("TO_CHAR(personas.fechaegreso, 'DD-MM-YYYY') as fechaegreso"),
+                    DB::raw("CAST(personas.ci AS TEXT) AS ci"),
+                    DB::raw("CAST(personas.celular AS TEXT) AS celular"),
+                    DB::raw("DATE_PART('year', AGE(personas.fechnacimeinto)) AS edad"),
+                    DB::raw("
+                        CASE
+                            WHEN EXISTS (
+                                SELECT 1 FROM novedades 
+                                WHERE novedades.idassig = assignments.idassig
+                                AND novedades.activo = true 
+                                AND CURRENT_DATE BETWEEN novedades.startdate AND novedades.enddate
+                            ) THEN 'No Forma'
+                            ELSE 'Forma'
+                        END AS estado_forma
+                    ")
+                )
+                ->whereIn('assignments.idorg', $accessibleOrgs)
+                ->whereNull('assignments.enddate')
+                ->whereNull('assignments.motivofin')
+                ->orderBy('personas.idgrado', 'asc')
+                ->get();
+    
+            if ($people->isEmpty()) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'No se encontraron personas para los accesos asignados al usuario.',
+                    'data' => []
+                ], 404);
+            }
+    
+            return response()->json([
+                'status' => true,
+                'message' => 'Personas encontradas',
+                'data' => $people
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Error al obtener las personas: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
 
 }
