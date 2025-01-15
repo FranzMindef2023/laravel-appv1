@@ -614,9 +614,6 @@ class PersonasController extends Controller
             ], 500);
         }
     }
-    /**
-     * Listar personas que acceden a las organizaciones con permisos.
-     */
     public function listPeoplePartediaria($iduser) {
         try {
             // Obtener todos los idorg permitidos para el usuario
@@ -643,7 +640,6 @@ class PersonasController extends Controller
                 ->leftJoin('assignments', 'personas.idpersona', '=', 'assignments.idpersona')
                 ->leftJoin('organizacion', 'assignments.idorg', '=', 'organizacion.idorg')
                 ->leftJoin('puestos', 'assignments.idpuesto', '=', 'puestos.idpuesto')
-                ->leftJoin('novedades', 'assignments.idassig', '=', 'novedades.idassig')
                 ->select(
                     'personas.*',
                     'assignments.idassig',
@@ -676,8 +672,8 @@ class PersonasController extends Controller
                             WHEN EXISTS (
                                 SELECT 1 FROM novedades 
                                 WHERE novedades.idassig = assignments.idassig
-                                AND novedades.activo = true 
-                                AND CURRENT_DATE BETWEEN novedades.startdate AND novedades.enddate
+                                AND novedades.startdate <= now()::date
+                                AND novedades.enddate >= now()::date
                             ) THEN 'No Forma'
                             ELSE 'Forma'
                         END AS estado_forma
@@ -709,6 +705,7 @@ class PersonasController extends Controller
             ], 500);
         }
     }
+    
 
 
 }
