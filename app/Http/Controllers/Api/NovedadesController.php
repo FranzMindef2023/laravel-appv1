@@ -10,6 +10,8 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Validator;
 use Carbon\Carbon;
 use App\Models\Novedades; 
+use App\Models\Partesdiarias; 
+use Illuminate\Support\Facades\DB;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 class NovedadesController extends Controller
@@ -235,4 +237,130 @@ class NovedadesController extends Controller
             ], 500);
         }
     }
+    /**
+     * Store multiple resources in storage.
+     */
+    public function storeMassive(Request $request)
+    {
+        try {
+            // Validar los datos masivos
+            $validated = $request->validate([
+                'partes' => 'required|array',
+                'partes.*.idpersona' => 'required|exists:personas,idpersona',
+                'partes.*.estado_forma' => 'nullable|string|max:50',
+                'partes.*.idnov' => 'nullable|integer|exists:tiponovedad,idnov',
+                'partes.*.estado' => 'nullable|string|max:255',
+            ]);
+            // return $validated['partes'];
+            $iduser = $request->input('iduser'); // El usuario viene aparte en el request
+            if (!$iduser || !DB::table('users')->where('iduser', $iduser)->exists()) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Usuario no válido o no encontrado.',
+                ], 400);
+            }
+
+            // Obtener las horas generales del sistema
+            $horas = DB::table('horas')->first();
+
+            if (!$horas) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'No se han definido horarios generales en el sistema.',
+                ], 404);
+            }
+
+            // Convertir las horas a objetos Carbon
+            $horainicial = $horas->horainicial;
+            $horafinal = $horas->horafinal;
+
+            // Capturar la fecha y hora actual
+            $fechaActual = Carbon::now();
+            $gestion = $fechaActual->year;
+            $mes = str_pad($fechaActual->month, 2, '0', STR_PAD_LEFT);
+            $dia = str_pad($fechaActual->day, 2, '0', STR_PAD_LEFT);
+            $horaActual = $fechaActual->format('H:i:s');
+            $fechaparte = $fechaActual->format('Y-m-d');
+
+            // Verificar si la hora actual está dentro del rango permitido
+            // return $horaActual.$horainicial.$horafinal;
+            if ($horaActual < $horainicial || $horaActual > $horafinal) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'La hora actual está fuera del rango permitido.',
+                ], 400);
+            }
+             // Generar un código único
+             $codigo = $gestion.$mes.$dia.$iduser;
+            // Validar y registrar cada parte
+            $resultados = [];
+            foreach ($validated['partes'] as $parte) {
+                // Validar si ya existe un registro para este idassig en la fecha actual
+                if (PartesDiarias::where('idpersona', $parte['idpersona'])
+                    ->where('fechaparte', $fechaparte)
+                    ->exists()) {
+                    $resultados[] = [
+                        'parte' => $parte,
+                        'status' => false,
+                        'message' => "Ya existe un registro para idpersona {$parte['idpersona']} en la fecha {$fechaparte}.",
+                    ];
+                    continue;
+                }
+
+                // Completar los datos
+                $parte['fechahora'] = $fechaActual->format('Y-m-d H:i:s');
+                $parte['fechaparte'] = $fechaparte;
+                $parte['gestion'] = $gestion;
+                $parte['mes'] = $mes;
+                $parte['codigo'] = $codigo;
+                $parte['iduser'] = $iduser;
+                $parte['estado'] = 'pendiente';
+                $parte['forma_noforma'] = $parte['estado_forma'];
+
+                // Registrar el parte
+                $registro = Partesdiarias::create($parte);
+
+                $resultados[] = [
+                    'parte' => $parte,
+                    'status' => true,
+                    'message' => 'Parte registrado correctamente.',
+                    'data' => $registro,
+                ];
+            }
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Todos los partes se registraron correctamente.',
+                'results' => $resultados,
+            ], 200);
+
+        } catch (\Throwable $th) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Error al registrar los partes diarios: ' . $th->getMessage()
+            ], 500);
+        }
+    }
+    public function matrisParte(){
+        // "SELECT 
+        //     tn.novedad AS descripcion,
+        //     COALESCE(SUM(CASE WHEN g.categoria = 'OG' THEN 1 ELSE 0 END), 0) AS oficiales_generales,
+        //     COALESCE(SUM(CASE WHEN g.categoria = 'OSP' THEN 1 ELSE 0 END), 0) AS oficiales_superiores,
+        //     COALESCE(SUM(CASE WHEN g.categoria = 'OSB' THEN 1 ELSE 0 END), 0) AS oficiales_subalternos,
+        //     COALESCE(SUM(CASE WHEN g.categoria = 'SOF' THEN 1 ELSE 0 END), 0) AS suboficiales,
+        //     COALESCE(SUM(CASE WHEN g.categoria = 'SGT' THEN 1 ELSE 0 END), 0) AS sargentos,
+        //     COALESCE(SUM(CASE WHEN g.categoria = 'CIV' THEN 1 ELSE 0 END), 0) AS civiles,
+        //     COALESCE(COUNT(pd.idnov), 0) AS total_general
+        // FROM tiponovedad tn
+        // LEFT JOIN partesdiarias pd 
+        //     ON tn.idnov = pd.idnov
+        //     AND pd.fechaparte ='2025-01-16' -- Cambia este rango de fechas según lo necesites
+        // LEFT JOIN personas p 
+        //     ON pd.idpersona = p.idpersona
+        // LEFT JOIN grados g 
+        //     ON p.idgrado = g.idgrado
+        // GROUP BY tn.idnov, tn.novedad
+        // ORDER BY tn.novedad;"
+    }
+
 }

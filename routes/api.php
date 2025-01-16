@@ -81,6 +81,8 @@ Route::middleware(['jwt.verify'])->group(function () {
     Route::put('updateEndDate/{id}', [AssignmentsController::class, 'updateEndDate']);
     Route::apiResource('novedades', NovedadesController::class);
     Route::get('indexVigentes', [NovedadesController::class, 'indexVigentes']);
+    Route::post('storemassive', [NovedadesController::class, 'storeMassive']);
+
     Route::post('roldeusuario', [UserController::class,'asignarRoles']);
     Route::post('registraracceso', [UserController::class,'registrarAcceso']);
     Route::delete('eliminaracceso/{iduser}/{idorg}', [UserController::class,'eliminarAcceso']);

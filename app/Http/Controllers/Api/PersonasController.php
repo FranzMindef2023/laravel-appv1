@@ -677,6 +677,16 @@ class PersonasController extends Controller
                             ) THEN 'No Forma'
                             ELSE 'Forma'
                         END AS estado_forma
+                    "),
+                    DB::raw("
+                        COALESCE((
+                            SELECT idnov 
+                            FROM novedades 
+                            WHERE novedades.idassig = assignments.idassig
+                            AND novedades.startdate <= now()::date
+                            AND novedades.enddate >= now()::date
+                            LIMIT 1
+                        ), null) AS idnov
                     ")
                 )
                 ->whereIn('assignments.idorg', $accessibleOrgs)

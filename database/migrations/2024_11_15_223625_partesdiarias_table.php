@@ -12,11 +12,11 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('partesdiarias', function (Blueprint $table) {
-            $table->unsignedBigInteger('idassig'); // Relación con la tabla assignments
+            $table->unsignedBigInteger('idpersona'); // Relación con la tabla assignments
             $table->string('gestion', 4); // Gestión (por ejemplo, "2024")
             $table->tinyInteger('mes'); // Mes (número del 1 al 12)
             $table->string('forma_noforma', 50); // Forma o NoForma
-            $table->unsignedBigInteger('idnovedad')->nullable(); // ID de la novedad (opcional)
+            $table->unsignedBigInteger('idnov')->nullable(); // ID de la novedad (opcional)
             $table->timestamp('fechahora'); // Fecha y hora del parte
             $table->date('fechaparte'); // Fecha del parte
             $table->enum('estado', ['recibido', 'pendiente'])->default('pendiente'); // Estado enviado/pendiente
@@ -25,7 +25,7 @@ return new class extends Migration
             $table->timestamps(); // created_at y updated_at
 
             // Relación con la tabla assignments
-            $table->foreign('idassig')->references('idassig')->on('assignments')->onDelete('cascade');
+            $table->foreign('idpersona')->references('idpersona')->on('personas')->onDelete('cascade');
             // Relación con la tabla usuarios
             $table->foreign('iduser')->references('iduser')->on('users')->onDelete('cascade');
         });
