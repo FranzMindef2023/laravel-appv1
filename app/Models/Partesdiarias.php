@@ -35,7 +35,8 @@ class Partesdiarias extends Model  // Extiende de Model
         'fechaparte',        
         'estado',
         'iduser',
-        'codigo'
+        'codigo',
+        'efectivo'
     ];
 
     /**

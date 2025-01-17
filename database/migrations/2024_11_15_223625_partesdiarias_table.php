@@ -15,6 +15,7 @@ return new class extends Migration
             $table->unsignedBigInteger('idpersona'); // Relación con la tabla assignments
             $table->string('gestion', 4); // Gestión (por ejemplo, "2024")
             $table->tinyInteger('mes'); // Mes (número del 1 al 12)
+            $table->tinyInteger('efectivo'); // Mes (número del 1 al 12)
             $table->string('forma_noforma', 50); // Forma o NoForma
             $table->unsignedBigInteger('idnov')->nullable(); // ID de la novedad (opcional)
             $table->timestamp('fechahora'); // Fecha y hora del parte

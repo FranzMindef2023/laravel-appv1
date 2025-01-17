@@ -243,6 +243,26 @@ class NovedadesController extends Controller
     public function storeMassive(Request $request)
     {
         try {
+            $iduser = $request->input('iduser'); // El usuario viene aparte en el request
+            // Obtener todos los idorg permitidos para el usuario
+            $accessibleOrgs = DB::table('user_accesos')
+            ->where('iduser', $iduser)
+            ->pluck('idorg');
+
+            if ($accessibleOrgs->isEmpty()) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'El usuario no tiene accesos asignados.',
+                    'total' => 0
+                ], 403);
+            }
+
+            // Contar las personas vigentes asignadas al usuario
+            $count = DB::table('assignments')
+                ->whereIn('idorg', $accessibleOrgs)
+                ->whereNull('enddate') // Vigentes: enddate debe ser NULL
+                ->whereNull('motivofin') // Vigentes: motivofin debe ser NULL
+                ->count();
             // Validar los datos masivos
             $validated = $request->validate([
                 'partes' => 'required|array',
@@ -252,7 +272,7 @@ class NovedadesController extends Controller
                 'partes.*.estado' => 'nullable|string|max:255',
             ]);
             // return $validated['partes'];
-            $iduser = $request->input('iduser'); // El usuario viene aparte en el request
+            
             if (!$iduser || !DB::table('users')->where('iduser', $iduser)->exists()) {
                 return response()->json([
                     'status' => false,
@@ -316,6 +336,7 @@ class NovedadesController extends Controller
                 $parte['iduser'] = $iduser;
                 $parte['estado'] = 'pendiente';
                 $parte['forma_noforma'] = $parte['estado_forma'];
+                $parte['efectivo'] = $count;
 
                 // Registrar el parte
                 $registro = Partesdiarias::create($parte);

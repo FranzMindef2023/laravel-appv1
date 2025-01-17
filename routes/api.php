@@ -22,6 +22,9 @@ use App\Http\Controllers\Api\GradosController;
 use App\Http\Controllers\Api\SexoController;
 use App\Http\Controllers\Api\SituacionesController; 
 use App\Http\Controllers\Api\ExpedicionesController;
+
+use App\Http\Controllers\Api\ReportsController;
+use App\Http\Controllers\Api\InfoReportsController;
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -54,6 +57,9 @@ Route::group([
 
 
 Route::get('pruebasapi',  [UserController::class, 'pruebasGas']);
+Route::get('generatePDF',  [ReportsController::class, 'generatePDF']);
+Route::get('listnovedadesbydate/{iduser}/{fecha}',  [ReportsController::class, 'listNovedadesByDate']);
+Route::get('indexreporpartes/{id}',  [InfoReportsController::class, 'indexReporPartes']);
 
 Route::middleware(['jwt.verify'])->group(function () {
     Route::apiResource('usuarios', UserController::class);
