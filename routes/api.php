@@ -59,6 +59,8 @@ Route::group([
 Route::get('pruebasapi',  [UserController::class, 'pruebasGas']);
 Route::get('generatePDF',  [ReportsController::class, 'generatePDF']);
 Route::get('listnovedadesbydate/{iduser}/{fecha}',  [ReportsController::class, 'listNovedadesByDate']);
+Route::get('partereportsgeneral/{iduser}/{fecha}',  [ReportsController::class, 'parteReportsGeneral']);
+Route::get('partereportsusers/{iduser}/{fecha}',  [ReportsController::class, 'parteReportsUsers']);
 Route::get('indexreporpartes/{id}',  [InfoReportsController::class, 'indexReporPartes']);
 
 Route::middleware(['jwt.verify'])->group(function () {

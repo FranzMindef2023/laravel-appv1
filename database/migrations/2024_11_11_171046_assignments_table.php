@@ -20,6 +20,7 @@ return new class extends Migration
             $table->date('startdate'); 
             $table->date('enddate')->nullable(); 
             $table->boolean('status'); 
+            $table->enum('estado', ['A', 'C','D'])->default('A'); // A=ACTUAL POSICION,C=CAMBIO DE ORGANIZACION,D=DESVINCULADO
             $table->string('motivo',150); 
             $table->timestamps();                        // created_at & updated_at timestamps
             // Foreign keys
