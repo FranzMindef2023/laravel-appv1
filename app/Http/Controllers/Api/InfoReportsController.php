@@ -59,57 +59,46 @@ class InfoReportsController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function indexReporPartesRrHh()
     {
-        //
-    }
+        try {
+            // Consulta a la base de datos
+            $results = DB::table('partesdiarias as p')
+                ->select(
+                    'p.gestion',
+                    'p.gestion AS id',
+                    'p.estado',
+                    'p.estado AS name',
+                    'p.fechaparte',
+                    DB::raw('COUNT(p.idpersona) AS total'),
+                    DB::raw("SUM(CASE WHEN p.forma_noforma = 'Forma' THEN 1 ELSE 0 END) AS total_forma"),
+                    DB::raw("SUM(CASE WHEN p.forma_noforma = 'No Forma' THEN 1 ELSE 0 END) AS total_no_forma"),
+                ) 
+                ->groupBy('p.gestion', 'p.fechaparte','p.estado')
+                ->orderBy('p.fechaparte', 'desc')
+                ->limit(5)
+                ->get();
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
-    {
-        //
-    }
-
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
-    {
-        //
+            // Retornar respuesta en formato JSON
+            return response()->json([
+                'status' => true,
+                'message' => 'Datos obtenidos exitosamente.',
+                'data' => $results
+            ], 200);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            // Retornar errores de validación
+            return response()->json([
+                'status' => false,
+                'message' => 'Error de validación.',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            // Manejo de errores generales
+            return response()->json([
+                'status' => false,
+                'message' => 'Error al obtener los datos: ' . $e->getMessage()
+            ], 500);
+        }
     }
 }
 // select *from ubigeo u 

@@ -62,6 +62,8 @@ Route::get('listnovedadesbydate/{iduser}/{fecha}',  [ReportsController::class, '
 Route::get('partereportsgeneral/{iduser}/{fecha}',  [ReportsController::class, 'parteReportsGeneral']);
 Route::get('partereportsusers/{iduser}/{fecha}',  [ReportsController::class, 'parteReportsUsers']);
 Route::get('indexreporpartes/{id}',  [InfoReportsController::class, 'indexReporPartes']);
+/**REPORTE DE PARTES RRHH */
+Route::get('indexreporpartesrrhh',  [InfoReportsController::class, 'indexReporPartesRrHh']);
 
 Route::middleware(['jwt.verify'])->group(function () {
     Route::apiResource('usuarios', UserController::class);
@@ -82,6 +84,8 @@ Route::middleware(['jwt.verify'])->group(function () {
     Route::get('listpersonasbyuseraccess/{id}', [PersonasController::class, 'listPeopleByUserAccess']);
     Route::get('listpersonaspermisos/{id}', [PersonasController::class, 'listPeopleByUserPermisos']);
     Route::get('listpeoplepartediaria/{id}', [PersonasController::class, 'listPeoplePartediaria']);
+    /**PERMISOS SOLITADOS VIGENTES */
+    Route::get('listpermisossolicitados', [PersonasController::class, 'listPermisosSolicitados']);
 
     Route::apiResource('assignments', AssignmentsController::class);
     Route::post('changeAssignment', [AssignmentsController::class, 'changeAssignment']);

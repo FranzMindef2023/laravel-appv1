@@ -715,7 +715,90 @@ class PersonasController extends Controller
             ], 500);
         }
     }
-    
+    /**
+     * Listar Permisos solicitados para RRHH
+     */
+    public function listPermisosSolicitados() {
+        try {
+            // Obtener las personas que pertenecen a los idorg permitidos con novedades vigentes
+            $people = DB::table('personas')
+                ->leftJoin('fuerzas', 'personas.idfuerza', '=', 'fuerzas.idfuerza')
+                ->leftJoin('especialidades', 'personas.idespecialidad', '=', 'especialidades.idespecialidad')
+                ->leftJoin('grados', 'personas.idgrado', '=', 'grados.idgrado')
+                ->leftJoin('sexos', 'personas.idsexo', '=', 'sexos.idsexo')
+                ->leftJoin('armas', 'personas.idarma', '=', 'armas.idarma')
+                ->leftJoin('statuscvs', 'personas.idcv', '=', 'statuscvs.idcv')
+                ->leftJoin('assignments', 'personas.idpersona', '=', 'assignments.idpersona')
+                ->leftJoin('organizacion', 'assignments.idorg', '=', 'organizacion.idorg')
+                ->leftJoin('puestos', 'assignments.idpuesto', '=', 'puestos.idpuesto')
+                ->leftJoin('novedades', 'assignments.idassig', '=', 'novedades.idassig') // Relación con novedades
+                ->leftJoin('tiponovedad', 'novedades.idnov', '=', 'tiponovedad.idnov') // Relación con tipo de novedad
+                ->select(
+                    'personas.*',
+                    'assignments.idassig',
+                    'novedades.idnovedad',
+                    'tiponovedad.idnov',
+                    'personas.idpersona as id',
+                    'fuerzas.fuerza as fuerza',
+                    'especialidades.especialidad as especialidad',
+                    'grados.grado as grado',
+                    'grados.abregrado',
+                    'sexos.sexo as sexo',
+                    'armas.arma as arma',
+                    'statuscvs.name as status_civil',
+                    'organizacion.nomorg as organizacion',
+                    'puestos.nompuesto as puesto',
+                    'novedades.startdate',
+                    'novedades.enddate',
+                    'novedades.descripcion',
+                    'tiponovedad.novedad as tipo_novedad', // Tipo de novedad
+                    DB::raw("
+                        CASE
+                            WHEN grados.categoria = 'OG' THEN CONCAT(grados.abregrado, ' ', personas.appaterno, ' ', personas.apmaterno, ' ', personas.nombres)
+                            WHEN personas.idarma = 1 AND personas.idespecialidad != 1 THEN CONCAT(grados.abregrado, ' ', especialidades.especialidad, ' ', personas.appaterno, ' ', personas.apmaterno, ' ', personas.nombres)
+                            WHEN personas.idarma != 1 AND personas.idespecialidad = 1 THEN CONCAT(grados.abregrado, ' ', armas.abrearma, ' ', personas.appaterno, ' ', personas.apmaterno, ' ', personas.nombres)
+                            WHEN personas.idarma = 1 AND personas.idespecialidad = 1 THEN CONCAT(grados.abregrado, ' ', personas.appaterno, ' ', personas.apmaterno, ' ', personas.nombres)
+                            ELSE CONCAT(grados.abregrado, ' ', especialidades.especialidad, ' ', personas.appaterno, ' ', personas.apmaterno, ' ', personas.nombres)
+                        END AS name
+                    "),
+                    DB::raw("TO_CHAR(personas.fechnacimeinto, 'DD-MM-YYYY') as fechnacimeinto"),
+                    DB::raw("TO_CHAR(personas.fechaegreso, 'DD-MM-YYYY') as fechaegreso"),
+                    DB::raw("CAST(personas.ci AS TEXT) AS ci"),
+                    DB::raw("CAST(personas.celular AS TEXT) AS celular"),
+                    DB::raw("DATE_PART('year', AGE(personas.fechnacimeinto)) AS edad"),
+                    DB::raw("TO_CHAR(novedades.startdate, 'DD/MM/YYYY') as inicio"),
+                    DB::raw("TO_CHAR(novedades.enddate, 'DD/MM/YYYY') as fin"),
+                )
+                ->whereNull('assignments.enddate')
+                ->whereNull('assignments.motivofin')
+                ->where('novedades.activo', true) // Filtrar solo novedades activas
+                ->where(function ($query) {
+                    $query->whereNull('novedades.enddate')
+                        ->orWhere('novedades.enddate', '>=', now()); // Vigencia de novedades
+                })
+                ->orderBy('personas.idgrado', 'asc')
+                ->get();
+
+            if ($people->isEmpty()) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'No se encontraron personas con novedades vigentes para los accesos asignados al usuario.',
+                    'data' => []
+                ], 404);
+            }
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Personas encontradas',
+                'data' => $people
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Error al obtener las personas: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 
 
 }
