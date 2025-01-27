@@ -55,16 +55,7 @@ Route::group([
     
 });
 
-
-Route::get('pruebasapi',  [UserController::class, 'pruebasGas']);
-Route::get('generatePDF',  [ReportsController::class, 'generatePDF']);
-Route::get('listnovedadesbydate/{iduser}/{fecha}',  [ReportsController::class, 'listNovedadesByDate']);
-Route::get('partereportsgeneral/{iduser}/{fecha}',  [ReportsController::class, 'parteReportsGeneral']);
-Route::get('partereportsusers/{iduser}/{fecha}',  [ReportsController::class, 'parteReportsUsers']);
-Route::get('indexreporpartes/{id}',  [InfoReportsController::class, 'indexReporPartes']);
-/**REPORTE DE PARTES RRHH */
-Route::get('indexreporpartesrrhh',  [InfoReportsController::class, 'indexReporPartesRrHh']);
-
+Route::get('papeletapermiso/{id}',  [ReportsController::class, 'PapeletaPermiso']);
 Route::middleware(['jwt.verify'])->group(function () {
     Route::apiResource('usuarios', UserController::class);
     Route::get('showroluser/{id}',  [UserController::class, 'showroluser']);
@@ -109,4 +100,15 @@ Route::middleware(['jwt.verify'])->group(function () {
     Route::apiResource('sexos', SexoController::class);
     Route::apiResource('situaciones', SituacionesController::class); 
     Route::apiResource('expediciones', ExpedicionesController::class);
+
+    Route::get('listnovedadesbydate/{iduser}/{fecha}',  [ReportsController::class, 'listNovedadesByDate']);
+    Route::get('partereportsgeneral/{iduser}/{fecha}',  [ReportsController::class, 'parteReportsGeneral']);
+    Route::get('partereportsusers/{iduser}/{fecha}',  [ReportsController::class, 'parteReportsUsers']);
+    Route::get('solpermisosrrhh/{iduser}/{fecha}',  [ReportsController::class, 'solPermisosRrhh']);
+    
+
+
+    Route::get('indexreporpartes/{id}',  [InfoReportsController::class, 'indexReporPartes']);
+    /**REPORTE DE PARTES RRHH */
+    Route::get('indexreporpartesrrhh',  [InfoReportsController::class, 'indexReporPartesRrHh']);
 });

@@ -88,7 +88,7 @@
         <div class="center">
             <p><em>{{ $date }}</em></p>
             <h1>PARTE DEL PERSONAL MILITAR DEL MINISTERIO DE DEFENSA</h1>
-            <p>UNIDAD DE SISTEMAS E INFORMATICA</p>
+            <p>{{ $user->nomorg }}</p>
         </div>
         <div class="right">
             <div class="circle">{{ $novedades->count() }}</div>

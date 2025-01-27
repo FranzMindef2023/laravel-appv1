@@ -43,7 +43,17 @@ class ReportsController extends Controller
                     'data' => []
                 ], 403);
             }
-
+            $users = DB::table('users as u')
+            ->select(
+                DB::raw("CONCAT(u.grado, ' ', u.nombres, ' ', u.appaterno, ' ', u.apmaterno) as nombre_completo"),
+                'o.nomorg',
+                'p.nompuesto'
+            )
+            ->join('organizacion as o', 'u.idorg', '=', 'o.idorg')
+            ->join('puestos as p', 'u.idpuesto', '=', 'p.idpuesto')
+            ->where('u.status', true)
+            ->where('u.iduser', $iduser)
+            ->first();
             // Obtener las personas que pertenecen a los idorg permitidos con novedades en la fecha proporcionada
             $novedades = DB::table('personas')
                 ->leftJoin('fuerzas', 'personas.idfuerza', '=', 'fuerzas.idfuerza')
@@ -91,7 +101,7 @@ class ReportsController extends Controller
                 ], 404);
             }
 
-            return $this->generateDemostracion($novedades);
+            return $this->generateDemostracion($novedades,$users);
         } catch (\Exception $e) {
             return response()->json([
                 'status' => false,
@@ -99,8 +109,86 @@ class ReportsController extends Controller
             ], 500);
         }
     }
+    public function solPermisosRrhh($iduser, $date) {
+        try {
+            // Obtener todos los idorg permitidos para el usuario
+            $accessibleOrgs = DB::table('user_accesos')
+                ->where('iduser', $iduser)
+                ->pluck('idorg');
 
-    private function generateDemostracion($novedades) {
+            if ($accessibleOrgs->isEmpty()) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'El usuario no tiene accesos asignados.',
+                    'data' => []
+                ], 403);
+            }
+            $users = DB::table('users as u')
+            ->select(
+                DB::raw("CONCAT(u.grado, ' ', u.nombres, ' ', u.appaterno, ' ', u.apmaterno) as nombre_completo"),
+                'o.nomorg',
+                'p.nompuesto'
+            )
+            ->join('organizacion as o', 'u.idorg', '=', 'o.idorg')
+            ->join('puestos as p', 'u.idpuesto', '=', 'p.idpuesto')
+            ->where('u.status', true)
+            ->where('u.iduser', $iduser)
+            ->first();
+            // Obtener las personas que pertenecen a los idorg permitidos con novedades en la fecha proporcionada
+            $novedades = DB::table('personas')
+                ->leftJoin('fuerzas', 'personas.idfuerza', '=', 'fuerzas.idfuerza')
+                ->leftJoin('especialidades', 'personas.idespecialidad', '=', 'especialidades.idespecialidad')
+                ->leftJoin('grados', 'personas.idgrado', '=', 'grados.idgrado')
+                ->leftJoin('sexos', 'personas.idsexo', '=', 'sexos.idsexo')
+                ->leftJoin('armas', 'personas.idarma', '=', 'armas.idarma')
+                ->leftJoin('statuscvs', 'personas.idcv', '=', 'statuscvs.idcv')
+                ->leftJoin('assignments', 'personas.idpersona', '=', 'assignments.idpersona')
+                ->leftJoin('organizacion', 'assignments.idorg', '=', 'organizacion.idorg')
+                ->leftJoin('puestos', 'assignments.idpuesto', '=', 'puestos.idpuesto')
+                ->leftJoin('novedades', 'assignments.idassig', '=', 'novedades.idassig')
+                ->leftJoin('tiponovedad', 'novedades.idnov', '=', 'tiponovedad.idnov')
+                ->select(
+                    'organizacion.nomorg as organizacion',
+                    'puestos.nompuesto as puesto',
+                    'novedades.startdate',
+                    'novedades.enddate',
+                    'novedades.descripcion',
+                    'tiponovedad.novedad as tipo_novedad',
+                    DB::raw("TO_CHAR(novedades.startdate, 'DD/MM/YYYY') as inicio"),
+                    DB::raw("TO_CHAR(novedades.enddate, 'DD/MM/YYYY') as fin"),
+                    DB::raw("
+                        CASE
+                            WHEN grados.categoria = 'OG' THEN CONCAT(grados.abregrado, ' ', personas.appaterno, ' ', personas.apmaterno, ' ', personas.nombres)
+                            WHEN personas.idarma = 1 AND personas.idespecialidad != 1 THEN CONCAT(grados.abregrado, ' ', especialidades.especialidad, ' ', personas.appaterno, ' ', personas.apmaterno, ' ', personas.nombres)
+                            WHEN personas.idarma != 1 AND personas.idespecialidad = 1 THEN CONCAT(grados.abregrado, ' ', armas.abrearma, ' ', personas.appaterno, ' ', personas.apmaterno, ' ', personas.nombres)
+                            WHEN personas.idarma = 1 AND personas.idespecialidad = 1 THEN CONCAT(grados.abregrado, ' ', personas.appaterno, ' ', personas.apmaterno, ' ', personas.nombres)
+                            ELSE CONCAT(grados.abregrado, ' ', especialidades.especialidad, ' ', personas.appaterno, ' ', personas.apmaterno, ' ', personas.nombres)
+                        END AS name
+                    ")
+                )
+                ->where('novedades.activo', true)
+                ->whereDate('novedades.startdate', '<=', $date)
+                ->whereDate('novedades.enddate', '>=', $date)
+                ->orderBy('personas.idgrado', 'asc')
+                ->get();
+
+            if ($novedades->isEmpty()) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'No se encontraron novedades para la fecha proporcionada.',
+                    'data' => []
+                ], 404);
+            }
+
+            return $this->generateDemostracion($novedades,$users);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Error al obtener las novedades: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+    private function generateDemostracion($novedades,$users) {
         // Obtener la fecha actual en formato adecuado
         $currentDate = Carbon::now()->locale('es')->isoFormat('LL'); // Ejemplo: "20 de enero de 2025"
 
@@ -109,6 +197,7 @@ class ReportsController extends Controller
             'title' => 'Demostración',
             'novedades' => $novedades,
             'date' => "La Paz, $currentDate", // Fecha dinámica
+            'user'=>$users
         ];
 
         // Generar el PDF utilizando DomPDF
@@ -118,6 +207,7 @@ class ReportsController extends Controller
         // Retornar el PDF generado
         return $pdf->download('demostracion.pdf');
     }
+
     public function parteReportsGeneral($iduser, $date)
     {
         try {
@@ -470,6 +560,86 @@ class ReportsController extends Controller
         // Retornar el PDF generado
         return $pdf->download('partegeneral.pdf');
     }
-   
+   //Imprimir la papeleta de permiso del personal
+    public function PapeletaPermiso(int $idnovedad)
+    {
+        try {
+            // Obtener la novedad, su tipo y la asignación relacionada
+            $datos = DB::table('novedades')
+                ->join('assignments', 'novedades.idassig', '=', 'assignments.idassig')
+                ->join('tiponovedad', 'novedades.idnov', '=', 'tiponovedad.idnov')
+                ->join('personas', 'assignments.idpersona', '=', 'personas.idpersona')
+                ->leftJoin('fuerzas', 'personas.idfuerza', '=', 'fuerzas.idfuerza')
+                ->leftJoin('especialidades', 'personas.idespecialidad', '=', 'especialidades.idespecialidad')
+                ->leftJoin('grados', 'personas.idgrado', '=', 'grados.idgrado')
+                ->leftJoin('armas', 'personas.idarma', '=', 'armas.idarma')
+                ->leftJoin('organizacion', 'assignments.idorg', '=', 'organizacion.idorg')
+                ->leftJoin('puestos', 'assignments.idpuesto', '=', 'puestos.idpuesto')
+                ->select(
+                    'novedades.*',
+                    'tiponovedad.novedad as tipo_novedad',
+                    'organizacion.nomorg as organizacion',
+                    'puestos.nompuesto as puesto',
+                    DB::raw("
+                        CASE
+                            WHEN grados.categoria = 'OG' THEN CONCAT(grados.abregrado, ' ', personas.appaterno, ' ', personas.apmaterno, ' ', personas.nombres)
+                            WHEN personas.idarma = 1 AND personas.idespecialidad != 1 THEN CONCAT(grados.abregrado, ' ', especialidades.especialidad, ' ', personas.appaterno, ' ', personas.apmaterno, ' ', personas.nombres)
+                            WHEN personas.idarma != 1 AND personas.idespecialidad = 1 THEN CONCAT(grados.abregrado, ' ', armas.abrearma, ' ', personas.appaterno, ' ', personas.apmaterno, ' ', personas.nombres)
+                            WHEN personas.idarma = 1 AND personas.idespecialidad = 1 THEN CONCAT(grados.abregrado, ' ', personas.appaterno, ' ', personas.apmaterno, ' ', personas.nombres)
+                            ELSE CONCAT(grados.abregrado, ' ', especialidades.especialidad, ' ', personas.appaterno, ' ', personas.apmaterno, ' ', personas.nombres)
+                        END AS nombre_completo
+                    "),
+                    DB::raw("CAST(personas.ci AS TEXT) AS ci"),
+                    DB::raw("CAST(personas.celular AS TEXT) AS celular"),
+                    DB::raw("TO_CHAR(novedades.startdate, 'DD/MM/YYYY') as desde"),
+                    DB::raw("TO_CHAR(novedades.enddate, 'DD/MM/YYYY') as hasta"),
+                )
+                ->where('novedades.idnovedad', $idnovedad)
+                ->first();
+
+            // Verificar si no se encontró la información
+            if (!$datos) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'No se encontró la novedad o los datos relacionados.'
+                ], 404);
+            }
+            // return $datos;
+            return $this->generatePapeleta($datos);
+            // Retornar una respuesta exitosa con los datos encontrados
+            // return response()->json([
+            //     'status' => true,
+            //     'message' => 'Datos encontrados para la papeleta de permiso.',
+            //     'data' => $datos
+            // ], 200);
+        } catch (\Exception $e) {
+            // Manejo de errores generales
+            return response()->json([
+                'status' => false,
+                'message' => 'Error al obtener los datos: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+    private function generatePapeleta($results){
+        // Obtener la fecha actual en formato adecuado
+        $currentDate = Carbon::now()->locale('es')->isoFormat('LL'); // Ejemplo: "20 de enero de 2025"
+
+        // Datos que pasarás a la vista
+        $data = [
+            'title' => 'Demostración',
+            'data' => $results, // Convertir a colección
+            'date' => "La Paz, $currentDate", // Fecha dinámica,
+        ];
+        
+
+        // Generar el PDF utilizando DomPDF
+        $pdf = app(PDF::class);
+        $pdf->loadView('reports.papeleta', $data);
+        // Configurar el tamaño de la página a Letter y la orientación a Portrait
+        $pdf->setPaper('letter', 'portrait');
+        // Retornar el PDF generado
+        return $pdf->download('papeleta.pdf');
+    }
+
    
 }
