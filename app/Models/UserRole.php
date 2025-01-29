@@ -29,7 +29,7 @@ class UserRole extends Model  // Extiende de Model
         'iduser',         // Nombre del rol
         'idrol'
     ];
-
+    
     /**
      * The attributes that should be hidden for serialization.
      *

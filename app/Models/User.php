@@ -66,12 +66,16 @@ class User extends Authenticatable implements JWTSubject,Auditable
             'idrol'          // Clave foránea en la tabla intermedia para el modelo relacionado
         );
     }
+    public function role()
+    {
+        return $this->hasOne(UserRole::class, 'iduser', 'iduser');
+    }
     // App\Models\User.php
     public function puesto()
     {
         return $this->belongsTo(Puestos::class, 'idpuesto', 'idpuesto');
     }
-
+    
 
     /**
      * The attributes that should be hidden for serialization.

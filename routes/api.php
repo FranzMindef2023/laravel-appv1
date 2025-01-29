@@ -55,7 +55,7 @@ Route::group([
     
 });
 
-Route::get('papeletapermiso/{id}',  [ReportsController::class, 'PapeletaPermiso']);
+
 Route::middleware(['jwt.verify'])->group(function () {
     Route::apiResource('usuarios', UserController::class);
     Route::get('showroluser/{id}',  [UserController::class, 'showroluser']);
@@ -105,6 +105,7 @@ Route::middleware(['jwt.verify'])->group(function () {
     Route::get('partereportsgeneral/{iduser}/{fecha}',  [ReportsController::class, 'parteReportsGeneral']);
     Route::get('partereportsusers/{iduser}/{fecha}',  [ReportsController::class, 'parteReportsUsers']);
     Route::get('solpermisosrrhh/{iduser}/{fecha}',  [ReportsController::class, 'solPermisosRrhh']);
+    Route::get('papeletapermiso/{id}',  [ReportsController::class, 'PapeletaPermiso']);
     
 
 

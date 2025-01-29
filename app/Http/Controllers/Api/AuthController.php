@@ -36,18 +36,24 @@ class AuthController extends Controller
     {
         $credentials = request(['email', 'password']);
 
-        // Intentar autenticar al usuario con las credenciales proporcionadas
+        // Intentar autenticar al usuario
         if (!$token = auth()->attempt($credentials)) {
             return response()->json(['status' => false, 'message' => 'Credenciales incorrectas'], 401);
         }
-    
-        // Actualizar la fecha de último inicio de sesión
+
+        // Obtener el usuario autenticado
         $user = auth()->user();
+
+        // Verificar si el usuario tiene status en `false`
+        if (!$user->status) {
+            return response()->json(['status' => false, 'message' => 'Usuario inactivo, acceso denegado'], 403);
+        }
+
+        // Actualizar la fecha de último inicio de sesión
         $user->update(['last_login' => now()]);
-    
+
         // Responder con el token y los datos del usuario
         return $this->respondWithToken($token);
-
     }
 
     /**
@@ -112,6 +118,7 @@ class AuthController extends Controller
                 'last_login' => $user->last_login,
                 'created_at' => $user->created_at,
                 'updated_at' => $user->updated_at,
+                'idrol' => optional($user->role)->idrol, // Acceder al idrol desde user_roles
             ]
         ], 200);
     }

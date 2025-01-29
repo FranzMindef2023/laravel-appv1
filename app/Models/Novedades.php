@@ -13,7 +13,7 @@ class Novedades extends Model implements Auditable
     use HasFactory, Notifiable;
 
     // Establecer la clave primaria
-    protected $primaryKey = 'idnov';
+    protected $primaryKey = 'idnovedad';
 
     // Campos que pueden ser asignados en masa
     protected $fillable = [

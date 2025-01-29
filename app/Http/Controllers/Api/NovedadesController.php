@@ -177,10 +177,12 @@ class NovedadesController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(StoreNovedadesRequest $request, string $id)
+    public function update(StoreNovedadesRequest $request, int $id)
     {
         try {
             // Buscar la novedad por su ID
+            // Buscar el puesto por su ID
+            // $novedad = Novedades::where('idpersona', $id)->firstOrFail();
             $novedad = Novedades::findOrFail($id);
 
             // Actualizar los campos con los datos validados
