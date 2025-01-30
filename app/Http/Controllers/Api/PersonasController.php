@@ -117,7 +117,8 @@ class PersonasController extends Controller
                     DB::raw("TO_CHAR(personas.fechaegreso, 'DD-MM-YYYY') as fechaegreso"),
                     DB::raw("CAST(personas.ci AS TEXT) AS ci"),
                     DB::raw("CAST(personas.celular AS TEXT) AS celular"),
-                    DB::raw("DATE_PART('year', AGE(personas.fechnacimeinto)) AS edad")
+                    DB::raw("DATE_PART('year', AGE(personas.fechnacimeinto)) AS edad"),
+                    DB::raw("DATE_PART('year', AGE(personas.fechaegreso)) AS antiguedad")
                 )
                 ->whereNull('assignments.enddate')
                 ->whereNull('assignments.motivofin')
