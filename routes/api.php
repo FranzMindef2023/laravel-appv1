@@ -112,4 +112,10 @@ Route::middleware(['jwt.verify'])->group(function () {
     Route::get('indexreporpartes/{id}',  [InfoReportsController::class, 'indexReporPartes']);
     /**REPORTE DE PARTES RRHH */
     Route::get('indexreporpartesrrhh',  [InfoReportsController::class, 'indexReporPartesRrHh']);
+    Route::get('userseguimientorrhh',  [InfoReportsController::class, 'userSeguimiento']);
+
+    Route::get('userhomecuadros',  [InfoReportsController::class, 'userHomeCuadros']);
+    Route::get('countpersonal',  [InfoReportsController::class, 'countPersonal']);
+    Route::get('countnovedades',  [InfoReportsController::class, 'countNovedades']);
+    Route::get('countpartepersona',  [InfoReportsController::class, 'countPartePersona']);
 });
