@@ -13,6 +13,7 @@ return new class extends Migration
     {
         Schema::create('gestiones', function (Blueprint $table) {
             $table->unsignedBigInteger('idpersona');   // int8, foreign key
+            $table->unsignedBigInteger('code');   // int8, foreign key
             $table->date('fechaingreso'); 
             $table->date('fechadesvin')->nullable(); 
             $table->bigInteger('gestion');
@@ -21,6 +22,7 @@ return new class extends Migration
 
             // Foreign keys
             $table->foreign('idpersona')->references('idpersona')->on('personas')->onDelete('cascade');
+            $table->foreign('code')->references('code')->on('reparticiones')->onDelete('cascade');
 
             $table->timestamps();  // created_at & updated_at timestamps
         });
