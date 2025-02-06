@@ -11,7 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        //
+        Schema::create('reglas_vacaciones', function (Blueprint $table) {
+            $table->id('id_regla');
+            $table->integer('anios_servicio_min')->notNull();
+            $table->integer('anios_servicio_max')->notNull();
+            $table->integer('dias_vacaciones')->notNull();
+            $table->timestamps();
+        });
     }
 
     /**
@@ -19,6 +25,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        //
+        Schema::dropIfExists('reglas_vacaciones');
     }
 };
