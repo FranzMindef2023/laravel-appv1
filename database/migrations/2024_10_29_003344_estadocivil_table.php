@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('statuscv', function (Blueprint $table) {
+        Schema::create('statuscvs', function (Blueprint $table) {
             $table->bigIncrements('idcv'); // Usar 'idcv' como clave primaria
             $table->string('name', 50)->unique(); // Nombre del estado civil
             $table->boolean('status'); // Estado activo/inactivo
@@ -24,6 +24,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('statuscv');
+        Schema::dropIfExists('statuscvs');
     }
 };

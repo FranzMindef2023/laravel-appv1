@@ -190,6 +190,49 @@ class UserController extends Controller
         }
     }
 
+    /**
+     * Update estado de usuario
+     */
+    /**
+     * Update estado de usuario
+     */
+    public function updateStatusUser(Request $request, int $id)
+    {
+        try {
+            // Validar solo el campo status
+            $validatedData = $request->validate([
+                'status' => 'required|boolean' // Asegurar que solo se actualiza el estado (true o false)
+            ]);
+
+            // Buscar el usuario por iduser
+            $user = User::where('iduser', $id)->firstOrFail();
+
+            // Actualizar solo el estado
+            $user->update(['status' => $validatedData['status']]);
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Estado del usuario actualizado correctamente',
+                'data' => $user,
+            ], 200); // Código de estado 200 para éxito
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Usuario no encontrado',
+            ], 404); // Código de estado 404 para no encontrado
+        } catch (ValidationException $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Datos inválidos',
+                'errors' => $e->errors(),
+            ], 422); // Código de estado 422 para validación fallida
+        } catch (\Throwable $th) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Error al actualizar el estado del usuario: ' . $th->getMessage(),
+            ], 500); // Código de estado 500 para errores generales
+        }
+    }
 
 
 

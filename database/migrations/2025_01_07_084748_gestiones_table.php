@@ -14,6 +14,7 @@ return new class extends Migration
         Schema::create('gestiones', function (Blueprint $table) {
             $table->unsignedBigInteger('idpersona');   // int8, foreign key
             $table->unsignedBigInteger('code');   // int8, foreign key
+            $table->unsignedBigInteger('codeac')->nullable();   // int8, foreign key
             $table->date('fechaingreso'); 
             $table->date('fechadesvin')->nullable(); 
             $table->bigInteger('gestion');

@@ -20,6 +20,10 @@ return new class extends Migration
             $table->date('enddate')->nullable();         // Fecha de fin (si aplica)
             $table->boolean('activo')->default(true);    // Indicador de si la novedad está activa
             $table->timestamps();                        // Timestamps: created_at y updated_at
+            $table->enum('estado', ['E', 'A'])->default('E'); // Estado enviado/pendiente
+            $table->unsignedBigInteger('iduserreg'); 
+            $table->unsignedBigInteger('iduseraut')->nullable();
+            $table->unsignedBigInteger('iduserupdate')->nullable();  
         
             // Claves foráneas
             $table->foreign('idassig')->references('idassig')->on('assignments')->onDelete('cascade');

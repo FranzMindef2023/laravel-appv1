@@ -58,6 +58,7 @@ Route::group([
 
 Route::middleware(['jwt.verify'])->group(function () {
     Route::apiResource('usuarios', UserController::class);
+    Route::put('updatestatususer/{id}', [UserController::class, 'updateStatusUser']);
     Route::get('showroluser/{id}',  [UserController::class, 'showroluser']);
     Route::apiResource('roles', RolesController::class);
     Route::apiResource('organizacion', OrganizacionController::class);

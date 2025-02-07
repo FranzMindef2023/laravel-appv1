@@ -46,7 +46,7 @@ return new class extends Migration
             $table->foreign('idgrado')->references('idgrado')->on('grados')->onDelete('cascade');
             $table->foreign('idsexo')->references('idsexo')->on('sexos')->onDelete('cascade');
             $table->foreign('idarma')->references('idarma')->on('armas')->onDelete('cascade');
-            $table->foreign('idcv')->references('idcv')->on('statuscv')->onDelete('cascade');
+            $table->foreign('idcv')->references('idcv')->on('statuscvs')->onDelete('cascade');
 
             $table->foreign('idsituacion')->references('idsituacion')->on('situaciones')->onDelete('cascade');
             $table->foreign('idexpedicion')->references('idexpedicion')->on('expediciones')->onDelete('cascade');

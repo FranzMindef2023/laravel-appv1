@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('reparticiones', function (Blueprint $table) {
-            $table->string('code', 50)->primary();
+            $table->bigInteger('code')->primary();
             $table->string('reparticion', 255);
             $table->timestamps();
         });
