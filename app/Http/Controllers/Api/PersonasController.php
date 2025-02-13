@@ -10,6 +10,8 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Validator;
 use Carbon\Carbon;
 use App\Models\Personas; 
+use App\Models\AsignacionVacaciones; 
+use App\Models\ReglasVacaciones; 
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\DB;
 
@@ -122,6 +124,7 @@ class PersonasController extends Controller
                 )
                 ->whereNull('assignments.enddate')
                 ->whereNull('assignments.motivofin')
+                ->where('assignments.estado','A')
                 ->orderBy('personas.idgrado', 'asc')
                 ->get();
     
@@ -133,6 +136,101 @@ class PersonasController extends Controller
                 ], 404);
             }
     
+            // Retornar una respuesta exitosa con los datos encontrados
+            return response()->json([
+                'status' => true,
+                'message' => 'Personas activas encontradas',
+                'data' => $personas
+            ], 200);
+    
+        } catch (\Exception $e) {
+            // Manejo de errores generales
+            return response()->json([
+                'status' => false,
+                'message' => 'Error al obtener las personas: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+    // Obtener todas las personas activas junto con sus relaciones
+    public function indexPersonalGeneral(){
+        try {
+            
+            $personas = DB::table('personas')
+                ->leftJoin('fuerzas', 'personas.idfuerza', '=', 'fuerzas.idfuerza')
+                ->leftJoin('especialidades', 'personas.idespecialidad', '=', 'especialidades.idespecialidad')
+                ->leftJoin('grados', 'personas.idgrado', '=', 'grados.idgrado')
+                ->leftJoin('sexos', 'personas.idsexo', '=', 'sexos.idsexo')
+                ->leftJoin('armas', 'personas.idarma', '=', 'armas.idarma')
+                ->leftJoin('statuscvs', 'personas.idcv', '=', 'statuscvs.idcv')
+                ->leftJoin('assignments', 'personas.idpersona', '=', 'assignments.idpersona')
+                ->leftJoin('organizacion', 'assignments.idorg', '=', 'organizacion.idorg')
+                ->leftJoin('puestos', 'assignments.idpuesto', '=', 'puestos.idpuesto')
+                ->select(
+                    'personas.idpersona as id',
+                    'fuerzas.fuerza as fuerza',
+                    'especialidades.especialidad as especialidad',
+                    'grados.grado as grado',
+                    'grados.abregrado',
+                    'sexos.sexo as sexo',
+                    'armas.arma as arma',
+                    'statuscvs.name as status_civil',
+                    'organizacion.nomorg as organizacion',
+                    'puestos.nompuesto as puesto',
+                    DB::raw("
+                        CASE
+                            WHEN grados.categoria = 'OG' THEN CONCAT(grados.abregrado, ' ', personas.appaterno, ' ', personas.apmaterno, ' ', personas.nombres)
+                            WHEN personas.idarma = 1 AND personas.idespecialidad != 1 THEN CONCAT(grados.abregrado, ' ', especialidades.especialidad, ' ', personas.appaterno, ' ', personas.apmaterno, ' ', personas.nombres)
+                            WHEN personas.idarma != 1 AND personas.idespecialidad = 1 THEN CONCAT(grados.abregrado, ' ', armas.abrearma, ' ', personas.appaterno, ' ', personas.apmaterno, ' ', personas.nombres)
+                            WHEN personas.idarma = 1 AND personas.idespecialidad = 1 THEN CONCAT(grados.abregrado, ' ', personas.appaterno, ' ', personas.apmaterno, ' ', personas.nombres)
+                            ELSE CONCAT(grados.abregrado, ' ', especialidades.especialidad, ' ', personas.appaterno, ' ', personas.apmaterno, ' ', personas.nombres)
+                        END AS name
+                    "),
+                    DB::raw("TO_CHAR(personas.fechnacimeinto, 'DD-MM-YYYY') as fechnacimeinto"),
+                    DB::raw("TO_CHAR(personas.fechaegreso, 'DD-MM-YYYY') as fechaegreso"),
+                    DB::raw("CAST(personas.ci AS TEXT) AS ci"),
+                    DB::raw("CAST(personas.celular AS TEXT) AS celular"),
+                    DB::raw("DATE_PART('year', AGE(personas.fechnacimeinto)) AS edad"),
+                    DB::raw("EXTRACT(YEAR FROM AGE(CURRENT_DATE, fechaegreso)) as anios"),
+                    DB::raw("(EXTRACT(MONTH FROM AGE(CURRENT_DATE, fechaegreso)) * 30 + 
+                                EXTRACT(DAY FROM AGE(CURRENT_DATE, fechaegreso))) as dias")
+                )
+                ->whereNull('assignments.enddate')
+                ->whereNull('assignments.motivofin')
+                ->where('assignments.estado','A')
+                ->orderBy('personas.idgrado', 'asc')
+                ->get();
+    
+            // Verificar si no se encontraron personas
+            if ($personas->isEmpty()) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'No se encontraron personas activas.'
+                ], 404);
+            }
+            foreach ($personas as $persona) {
+                $dias_vacaciones = 0;
+                // Obtener la gestión actual (año actual)
+                $gestion_actual = Carbon::now()->year;
+            
+                // Convertir años y días de servicio en total de días
+                $diasTotal = ($persona->anios * 365) + $persona->dias;
+            
+                // Buscar la regla de vacaciones correspondiente según `totaldias`
+                $regla = ReglasVacaciones::where('totaldias', '<=', $diasTotal) // Buscar la regla que se ajusta al total de días
+                    ->orderBy('totaldias', 'desc') // Tomar la regla más alta que cumpla el criterio
+                    ->first();
+            
+                // Si encontramos una regla válida, asignamos los días de vacaciones
+                if ($regla) {
+                    $dias_vacaciones = $regla->dias_vacaciones;
+                }
+            
+                // Asignar los días de vacaciones a la persona
+                $persona->dias_vacaciones = $dias_vacaciones;
+                $persona->gestion_actual = $gestion_actual;
+            }
+            
+
             // Retornar una respuesta exitosa con los datos encontrados
             return response()->json([
                 'status' => true,

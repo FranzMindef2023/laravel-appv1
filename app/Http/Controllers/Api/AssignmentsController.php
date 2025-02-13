@@ -45,7 +45,8 @@ class AssignmentsController extends Controller
                 'idpersona' => $request->idpersona,
                 'fechaingreso' => $request->startdate,
                 'gestion' => $request->gestion,
-                'motivo' => $request->motivo
+                'motivo' => $request->motivo,
+                'code'=>$request->code,
             ]);
             return response()->json([
                 'status' => true,
@@ -75,7 +76,8 @@ class AssignmentsController extends Controller
                 
                 if ($previousAssignment) {
                     $previousAssignment->update([
-                        'enddate' => $data['startdate']
+                        'enddate' => $data['startdate'],
+                        'estado' => 'C'
                     ]);
                 }
             }
@@ -181,7 +183,8 @@ class AssignmentsController extends Controller
             // Actualizar solo el campo enddate
             $assignment->update([
                 'enddate' => $request->input('enddate'),
-                'motivofin'=>$request->input('motivofin')
+                'motivofin'=>$request->input('motivofin'),
+                'estado'=>'D'
             ]);
             // Actualizar datos en la tabla Gestiones
             $gestion = Gestiones::where('idpersona', $request->idpersona)
@@ -240,13 +243,19 @@ class AssignmentsController extends Controller
                     'message' => 'No se encontraron asignaciones para la persona con idpersona: ' . $id
                 ], 404);
             }
+            // Buscar el registro por idpersona donde enddate sea null
+            $gestion = Gestiones::where('idpersona', $id)
+                ->whereNull('fechadesvin')
+                ->first();
             // Dar formato a startdate
             $asignaciones->startdate = date('d-m-Y', strtotime($asignaciones->startdate));
+            $asignaciones->code = $gestion->code;
             // Retornar el registro encontrado
             return response()->json([
                 'status' => true,
                 'message' => 'Asignación encontrada',
-                'data' => $asignaciones
+                'data' => $asignaciones,
+                'gestion'=>$gestion
             ], 200); // Código de estado 200 para éxito
             
         } catch (\Exception $e) {

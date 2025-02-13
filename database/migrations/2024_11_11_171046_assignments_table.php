@@ -16,12 +16,15 @@ return new class extends Migration
             $table->bigInteger('gestion');  
             $table->unsignedBigInteger('idpersona');
             $table->unsignedBigInteger('idorg');
-            $table->unsignedBigInteger('idpuesto');
+            $table->unsignedBigInteger('idpuesto'); 
+            $table->unsignedBigInteger('idorgani');
+            $table->unsignedBigInteger('idhijastro');
             $table->date('startdate'); 
             $table->date('enddate')->nullable(); 
             $table->boolean('status'); 
             $table->enum('estado', ['A', 'C','D'])->default('A'); // A=ACTUAL POSICION,C=CAMBIO DE ORGANIZACION,D=DESVINCULADO
             $table->string('motivo',150); 
+            $table->string('motivofin',150); 
             $table->timestamps();                        // created_at & updated_at timestamps
             // Foreign keys
             $table->foreign('idpersona')->references('idpersona')->on('personas')->onDelete('cascade');

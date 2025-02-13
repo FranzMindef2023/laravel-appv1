@@ -25,6 +25,7 @@ use App\Http\Controllers\Api\ExpedicionesController;
 
 use App\Http\Controllers\Api\ReportsController;
 use App\Http\Controllers\Api\InfoReportsController;
+use App\Http\Controllers\Api\ReparticionesController;
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -55,7 +56,7 @@ Route::group([
     
 });
 
-
+Route::get('indexpersonalgeneral', [PersonasController::class, 'indexPersonalGeneral']);
 Route::middleware(['jwt.verify'])->group(function () {
     Route::apiResource('usuarios', UserController::class);
     Route::put('updatestatususer/{id}', [UserController::class, 'updateStatusUser']);
@@ -71,6 +72,7 @@ Route::middleware(['jwt.verify'])->group(function () {
     Route::apiResource('tiponovedades', TipoNovedadesController::class);
     Route::apiResource('persona', PersonasController::class);
     Route::get('indexpersonal', [PersonasController::class, 'indexPersonal']);
+    
     Route::get('showpersonal/{id}', [PersonasController::class, 'showPersonal']);
     Route::get('getdesvinculados', [PersonasController::class, 'getDesvinculadosGestionActual']);
     Route::get('listpersonasbyuseraccess/{id}', [PersonasController::class, 'listPeopleByUserAccess']);
@@ -119,4 +121,6 @@ Route::middleware(['jwt.verify'])->group(function () {
     Route::get('countpersonal',  [InfoReportsController::class, 'countPersonal']);
     Route::get('countnovedades',  [InfoReportsController::class, 'countNovedades']);
     Route::get('countpartepersona',  [InfoReportsController::class, 'countPartePersona']);
+
+    Route::apiResource('reparticiones', ReparticionesController::class);
 });

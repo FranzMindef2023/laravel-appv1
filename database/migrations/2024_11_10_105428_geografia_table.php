@@ -17,7 +17,7 @@ return new class extends Migration
             $table->integer('ubigeo');
             $table->string('codigoubigeo', 20);
             $table->string('descubigeo', 100);
-            $table->string('nivel', 5);
+            $table->string('nivel', 15);
             $table->string('siglaubigeo', 30);
             $table->timestamps();
         });

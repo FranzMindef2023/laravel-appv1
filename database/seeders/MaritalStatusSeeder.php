@@ -21,6 +21,6 @@ class MaritalStatusSeeder extends Seeder
             ['name' => 'Separado(a)', 'status' => true,'created_at' => now(),'updated_at' => now()]
         ];
 
-        DB::table('statuscv')->insert($statuses);
+        DB::table('statuscvs')->insert($statuses);
     }
 }

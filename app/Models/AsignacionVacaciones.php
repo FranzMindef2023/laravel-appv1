@@ -9,7 +9,7 @@ use Laravel\Sanctum\HasApiTokens;
 use Tymon\JWTAuth\Contracts\JWTSubject;
 // use OwenIt\Auditing\Contracts\Auditable;
 
-class Gestiones extends Model  // Extiende de Model
+class AsignacionVacaciones extends Model  // Extiende de Model
 {
     // use \OwenIt\Auditing\Auditable;
     use HasApiTokens, HasFactory, Notifiable;
@@ -27,15 +27,12 @@ class Gestiones extends Model  // Extiende de Model
      */
     protected $fillable = [
         'idpersona',         // Nombre del rol
-        'fechaingreso',
-        'fechadesvin',         // Nombre del rol
         'gestion',
-        'motivo',         // Nombre del rol
-        'motivofin',
-        'code',
-        'codeac'
+        'anios_servicio',
+        'dias_asignados',
+        'dias_utilizados'
     ];
-
+    
     /**
      * The attributes that should be hidden for serialization.
      *

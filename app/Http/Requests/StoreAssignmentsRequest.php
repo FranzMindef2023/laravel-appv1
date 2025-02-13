@@ -31,6 +31,7 @@ class StoreAssignmentsRequest extends FormRequest
             'idpersona' => 'required|exists:personas,idpersona',
             'idorg' => 'required|exists:organizacion,idorg',
             'idorgani' => 'required|exists:organizacion,idorg',
+            'code' => 'required|exists:reparticiones,code',
             'idhijastro' => 'required|exists:organizacion,idorg',
             'idpuesto' => 'required|exists:puestos,idpuesto',
             'startdate' => 'required|date',
@@ -38,6 +39,7 @@ class StoreAssignmentsRequest extends FormRequest
             'status' => 'required|boolean',
             'motivo' => 'nullable|string|max:255', // Agregado para el campo motivo 
             'motivofin' => 'nullable|string|max:255',
+            'estado' => 'required|string|in:A,C,D',
         ];
     }
     public function messages()
@@ -53,6 +55,9 @@ class StoreAssignmentsRequest extends FormRequest
 
             'idorgani.required' => 'El ID de la reparticion es obligatorio.',
             'idorgani.exists' => 'La reparticion seleccionada no existe.',
+
+            'code.required' => 'El code del destino es obligatorio.',
+            'code.exists' => 'El destino seleccionada no existe.',
 
             'idhijastro.required' => 'El ID de la unidad organizacional es obligatorio.',
             'idhijastro.exists' => 'La unidad organizacional seleccionada no existe.',
@@ -78,6 +83,7 @@ class StoreAssignmentsRequest extends FormRequest
             // Mensajes para el campo motivo
             'motivofin.string' => 'El motivo de repliegue debe ser un texto válido.',
             'motivofin.max' => 'El motivofin de repliegue no puede tener más de 255 caracteres.',
+            'estado.required' =>'El capo de estado de cambio es requerido.',
         ];
     }
 

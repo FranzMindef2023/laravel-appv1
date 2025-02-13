@@ -20,7 +20,7 @@ class DatabaseSeeder extends Seeder
             OrganizacionSeeder::class,
             PuestosSeeder::class,
             SexosSeeder::class,
-            TiponovSeeder::class,
+            tiponovSeeder::class,
             ExpedicionesSeeder::class,
             SituacionesSeeder::class,
         ]);

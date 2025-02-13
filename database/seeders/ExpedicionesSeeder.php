@@ -13,7 +13,7 @@ class ExpedicionesSeeder extends Seeder
      */
     public function run(): void
     {
-        DB::table('expediciones')->insert(
+        DB::table('expediciones')->insert([
             [
             'idexpedicion' => 1,
             'Departamento' => 'CH',
@@ -70,7 +70,7 @@ class ExpedicionesSeeder extends Seeder
                 'created_at' => now(),
                 'updated_at' => now()
             ]
-
+        ]
         );
     }
 }
