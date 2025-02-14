@@ -31,6 +31,7 @@ class StoreNovedadesRequest extends FormRequest
             'startdate' => 'required|date',
             'enddate' => 'nullable|date|after_or_equal:startdate',
             'activo' => 'required|boolean',
+            'iduserreg'=>'required|integer',
         ];
     }
 

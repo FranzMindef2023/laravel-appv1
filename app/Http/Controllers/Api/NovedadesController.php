@@ -11,6 +11,9 @@ use Illuminate\Support\Facades\Validator;
 use Carbon\Carbon;
 use App\Models\Novedades; 
 use App\Models\Partesdiarias; 
+use App\Models\TipoNovedad; // <- Importación de User
+use App\Models\AsignacionVacaciones; 
+use App\Models\Assignments; 
 use Illuminate\Support\Facades\DB;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 
@@ -61,7 +64,11 @@ class NovedadesController extends Controller
      */
     public function store(StoreNovedadesRequest $request)
     {
+        
         try {
+            // Capturar la fecha y hora actual
+            $fechaActual = Carbon::now();
+            $gestion = $fechaActual->year;
             // Verificar si ya existe una novedad vigente para el mismo idasig (asignación), basada en la fecha de finalización.
             $novedadesVigentes = Novedades::where('idassig', $request->input('idassig'))
                 ->where('activo', true)
@@ -76,7 +83,50 @@ class NovedadesController extends Controller
                     'data' => $novedadesVigentes // Incluye el tipo de novedad relacionado
                 ], 404); // Código de estado 400 para solicitud inválida
             }
+            //descontar la vacaciones 
+            if($request->input('idnov')==2){
+                //seleccionamos la persona 
+                $persona=Assignments::where('idassig', $request->input('idassig'))
+                ->where('estado', 'A')
+                ->first();
+                if (!$persona) {
+                    return response()->json([
+                        'status' => false,
+                        'message' => 'No se encontró la persona asignada.',
+                        'data' => null
+                    ], 404);
+                }
+                // Obtener la primera vacación vigente para la persona en la gestión actual
+                $vacacionVigente = AsignacionVacaciones::where('idpersona', $persona->idpersona)
+                    ->where('gestion', $gestion)
+                    ->first(); // En lugar de get(), obtenemos solo el primer registro
+                if (!$vacacionVigente) {
+                    return response()->json([
+                        'status' => false,
+                        'message' => "No existe vacación programada para la gestión $gestion.",
+                        'data' => null
+                    ], 404);
+                }
+                $diasDisponibles=$vacacionVigente->dias_asignados;
+                $diasUtilizadas=$vacacionVigente->dias_utilizados;
+                $diasProgramados = $this->contarDiasHabiles($request->input('startdate'), $request->input('enddate'));
+                if($diasDisponibles<$diasProgramados){
+                    return response()->json([
+                        'status' => true,
+                        'message' => 'No se puede registrar la vacación porque excede los días disponibles.',
+                        'data' => $diasDisponibles
+                    ], 404);
+                }
+                $diasStockDisponibles=$diasDisponibles-$diasProgramados;
+                $diasStockUtilizados=$diasUtilizadas+$diasProgramados;
+                // Solo actualizar los campos específicos
+                $vacacionVigente->update([
+                    'dias_asignados' => $diasStockDisponibles,
+                    'dias_utilizados' => $diasStockUtilizados,
+                    'updated_at' => now() // Opcional, para registrar cuándo se modificó
+                ]);
 
+            }
             // Crear la nueva novedad si no existe una vigente.
             $response = Novedades::create($request->validated());
 
@@ -364,26 +414,190 @@ class NovedadesController extends Controller
             ], 500);
         }
     }
-    public function matrisParte(){
-        // "SELECT 
-        //     tn.novedad AS descripcion,
-        //     COALESCE(SUM(CASE WHEN g.categoria = 'OG' THEN 1 ELSE 0 END), 0) AS oficiales_generales,
-        //     COALESCE(SUM(CASE WHEN g.categoria = 'OSP' THEN 1 ELSE 0 END), 0) AS oficiales_superiores,
-        //     COALESCE(SUM(CASE WHEN g.categoria = 'OSB' THEN 1 ELSE 0 END), 0) AS oficiales_subalternos,
-        //     COALESCE(SUM(CASE WHEN g.categoria = 'SOF' THEN 1 ELSE 0 END), 0) AS suboficiales,
-        //     COALESCE(SUM(CASE WHEN g.categoria = 'SGT' THEN 1 ELSE 0 END), 0) AS sargentos,
-        //     COALESCE(SUM(CASE WHEN g.categoria = 'CIV' THEN 1 ELSE 0 END), 0) AS civiles,
-        //     COALESCE(COUNT(pd.idnov), 0) AS total_general
-        // FROM tiponovedad tn
-        // LEFT JOIN partesdiarias pd 
-        //     ON tn.idnov = pd.idnov
-        //     AND pd.fechaparte ='2025-01-16' -- Cambia este rango de fechas según lo necesites
-        // LEFT JOIN personas p 
-        //     ON pd.idpersona = p.idpersona
-        // LEFT JOIN grados g 
-        //     ON p.idgrado = g.idgrado
-        // GROUP BY tn.idnov, tn.novedad
-        // ORDER BY tn.novedad;"
+
+    /**
+     * Verificador de Vacaciones.
+     */
+    public function verificadorVacaciones(int $idper, int $idVacacion)
+    {
+        try {
+            // Capturar la fecha y hora actual
+            $fechaActual = Carbon::now();
+            $gestion = $fechaActual->year;
+
+            if ($idVacacion == 2) {
+                // Obtener la primera vacación vigente para la persona en la gestión actual
+                $vacacionVigente = AsignacionVacaciones::where('idpersona', $idper)
+                    ->where('gestion', $gestion)
+                    ->first(); // En lugar de get(), obtenemos solo el primer registro
+
+                // Si no hay vacaciones programadas
+                if (!$vacacionVigente) {
+                    return response()->json([
+                        'status' => false,
+                        'message' => "No existe vacación programada para la gestión $gestion.",
+                        'data' => null
+                    ], 200);
+                }
+
+                // Verificar si tiene días disponibles
+                if ($vacacionVigente->dias_asignados <= 0) {
+                    return response()->json([
+                        'status' => false,
+                        'message' => "Vacación agotada para la gestión $gestion.",
+                        'data' => $vacacionVigente
+                    ], 200);
+                }
+
+                return response()->json([
+                    'status' => true,
+                    'message' => "El personal seleccionado cuenta con {$vacacionVigente->dias_asignados} días de vacaciones vigentes.",
+                    'data' => $vacacionVigente
+                ], 200);
+            }
+
+            return response()->json([
+                'status' => true,
+                'message' => 'ok',
+                'data' => []
+            ], 200);
+
+        } catch (\Throwable $th) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Error al verificar vacaciones: ' . $th->getMessage()
+            ], 500);
+        }
+    }
+    /**
+     * Verificador de horas antisipads de la vacacion
+     */
+    public function verificadorVacacionesHoras(int $idper, int $idVacacion, $fecha)
+    {
+        try {
+            // Capturar la fecha y hora actual
+            $fechaActual = Carbon::now()->startOfDay();;
+            $fechaparte = $fechaActual->format('Y-m-d');
+           // Fecha proporcionada (hasta el final del día)
+            $fechaProporcionada = Carbon::parse($fecha)->endOfDay();
+
+            // Calcular diferencia en horas
+            $horasDiferencia = $fechaActual->diffInHours($fechaProporcionada)+1;
+
+            if ($idVacacion == 2) {
+                // Obtener la primera vacación vigente para la persona en la gestión actual
+                $vacacionprioridad = TipoNovedad::where('idnov', $idVacacion)
+                    ->first(); // En lugar de get(), obtenemos solo el primer registro
+
+                // Si no hay vacaciones programadas
+                if (!$vacacionprioridad) {
+                    return response()->json([
+                        'status' => false,
+                        'message' => "No existe vacación programada para la gestión $gestion.",
+                        'data' => null
+                    ], 200);
+                }
+
+                // Verificar si tiene días disponibles
+                if ($horasDiferencia<$vacacionprioridad->prioridad ) {
+                    return response()->json([
+                        'status' => false,
+                        'message' => "La Vacación debe ser programada con  $vacacionprioridad->prioridad. Horas Antes",
+                        'data' => $horasDiferencia
+                    ], 200);
+                }
+            }
+
+            return response()->json([
+                'status' => true,
+                'message' => 'ok',
+                'data' => []
+            ], 200);
+
+        } catch (\Throwable $th) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Error al verificar vacaciones: ' . $th->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Verificador cantidad de dias programadas en la gestion que no sobrepase los dias que esta sacando
+     */
+    public function verificadorVacacionesDiasVigentes(int $idper, int $idVacacion, $fechInicio, $fechFin)
+    {
+        try {
+            // Capturar la fecha y hora actual
+            $fechaActual = Carbon::now();
+            $gestion = $fechaActual->year;
+            // Convertir fechas a objetos Carbon
+            // Definir las fechas
+            $fechaInicio = Carbon::parse($fechInicio);
+            $fechaFin = Carbon::parse($fechFin);
+
+            // Calcular la diferencia en días e incluir el día de inicio
+            $diasDiferencia = $this->contarDiasHabiles($fechInicio, $fechFin);
+
+            if ($idVacacion == 2) {
+                // Obtener la primera vacación vigente para la persona en la gestión actual
+                $vacacionVigente = AsignacionVacaciones::where('idpersona', $idper)
+                    ->where('gestion', $gestion)
+                    ->first(); // En lugar de get(), obtenemos solo el primer registro
+
+                // Si no hay vacaciones programadas
+                if (!$vacacionVigente) {
+                    return response()->json([
+                        'status' => false,
+                        'message' => "No existe vacación programada para la gestión $gestion.",
+                        'data' => null
+                    ], 200);
+                }
+
+                // Verificar si tiene días disponibles
+                if ($diasDiferencia>$vacacionVigente->dias_asignados ) {
+                    return response()->json([
+                        'status' => false,
+                        'message' => "La cantidad dias de Vacación exede lo programado para gestion $gestion",
+                        'data' => $vacacionVigente
+                    ], 200);
+                }
+                return response()->json([
+                    'status' => true,
+                    'message' => "El personal esta seguro de programar $diasDiferencia dias de vacación de la fecha: $fechInicio hasta la fecha $fechFin ??",
+                    'data' => $diasDiferencia
+                ], 200);
+            }
+
+            return response()->json([
+                'status' => true,
+                'message' => 'ok',
+                'data' => $diasDiferencia
+            ], 200);
+
+        } catch (\Throwable $th) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Error al verificar vacaciones: ' . $th->getMessage()
+            ], 500);
+        }
+    }
+    private function contarDiasHabiles($fechInicio, $fechFin) {
+        $fechaInicio = Carbon::parse($fechInicio);
+        $fechaFin = Carbon::parse($fechFin);
+        $diasHabiles = 0;
+    
+        // Recorrer cada día en el rango
+        while ($fechaInicio->lte($fechaFin)) {
+            // Contar solo si el día no es sábado (6) ni domingo (7)
+            if ($fechaInicio->dayOfWeek !== Carbon::SATURDAY && $fechaInicio->dayOfWeek !== Carbon::SUNDAY) {
+                $diasHabiles++;
+            }
+            // Avanzar al siguiente día
+            $fechaInicio->addDay();
+        }
+    
+        return $diasHabiles;
     }
 
 }

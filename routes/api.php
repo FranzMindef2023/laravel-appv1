@@ -25,7 +25,8 @@ use App\Http\Controllers\Api\ExpedicionesController;
 
 use App\Http\Controllers\Api\ReportsController;
 use App\Http\Controllers\Api\InfoReportsController;
-use App\Http\Controllers\Api\ReparticionesController;
+use App\Http\Controllers\Api\ReparticionesController; 
+use App\Http\Controllers\Api\AsignacionVacacionesController; 
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -56,7 +57,7 @@ Route::group([
     
 });
 
-Route::get('indexpersonalgeneral', [PersonasController::class, 'indexPersonalGeneral']);
+
 Route::middleware(['jwt.verify'])->group(function () {
     Route::apiResource('usuarios', UserController::class);
     Route::put('updatestatususer/{id}', [UserController::class, 'updateStatusUser']);
@@ -123,4 +124,11 @@ Route::middleware(['jwt.verify'])->group(function () {
     Route::get('countpartepersona',  [InfoReportsController::class, 'countPartePersona']);
 
     Route::apiResource('reparticiones', ReparticionesController::class);
+
+    Route::get('indexpersonalgeneral', [PersonasController::class, 'indexPersonalGeneral']);
+    Route::apiResource('vacaciones', AsignacionVacacionesController::class);
+    //vericador de vacaciones 
+    Route::get('verificadorvacaciones/{idper}/{idvacacion}', [NovedadesController::class, 'verificadorVacaciones']);
+    Route::get('verificadorVacacionesHoras/{idper}/{idvacacion}/{fecha}', [NovedadesController::class, 'verificadorVacacionesHoras']);
+    Route::get('verificadorVacacionesDiasVigentes/{idper}/{idvacacion}/{fechini}/{fechfin}', [NovedadesController::class, 'verificadorVacacionesDiasVigentes']);
 });

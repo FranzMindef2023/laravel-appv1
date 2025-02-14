@@ -14,7 +14,8 @@ return new class extends Migration
         Schema::create('tiponovedad', function (Blueprint $table) {
             $table->increments('idnov');        // Identificador único
             $table->string('novedad', 100); // Tipo de novedad (Permiso, Vacaciones, etc.)
-            $table->boolean('status');    
+            $table->boolean('status');   
+            $table->unsignedBigInteger('prioridad'); 
             $table->timestamps();               // created_at & updated_at
         });
         
