@@ -96,7 +96,7 @@
     <div class="boleta-container">
         <!-- Contenido superior -->
         <div class="header">
-            <img src="logo.png" alt="Logo">
+            <img src="https://sistemas.mindef.gob.bo/assets/img/portfolio/logo2.jpg" alt="Logo">
             <div class="title">
                 <h1>Solicitud de Permiso</h1>
                 <p>{{$data->tipo_novedad}}</p>

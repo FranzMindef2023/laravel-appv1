@@ -663,6 +663,7 @@ class PersonasController extends Controller
                     'puestos.nompuesto as puesto',
                     'novedades.startdate',
                     'novedades.enddate',
+                    'novedades.estado AS estatus',
                     'novedades.descripcion',
                     'tiponovedad.novedad as tipo_novedad', // Tipo de novedad
                     DB::raw("

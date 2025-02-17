@@ -90,9 +90,9 @@
             <h1>PARTE DEL PERSONAL MILITAR DEL MINISTERIO DE DEFENSA</h1>
             <h1>{{ $user->nomorg }}</h1>
         </div>
-        <div class="right">
+        <!-- <div class="right">
             <div class="circle">{{ $parte->count() }}</div>
-        </div>
+        </div> -->
     </div>
 
     <!-- Título de DEMOSTRACIÓN -->
