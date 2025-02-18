@@ -69,6 +69,13 @@ class NovedadesController extends Controller
             // Capturar la fecha y hora actual
             $fechaActual = Carbon::now();
             $gestion = $fechaActual->year;
+            //generar codigo de correlativo para cada gestion
+            $registro = Novedades::whereYear('created_at', $gestion)
+              ->orderByDesc('correlativo')
+              ->first();
+            $nuevoCorrelativo = $registro ? $registro->correlativo + 1 : 1;
+            // Formatear el correlativo para que tenga 5 dígitos con ceros a la izquierda
+            $correlativoFormateado = str_pad($nuevoCorrelativo, 5, '0', STR_PAD_LEFT);
             // Verificar si ya existe una novedad vigente para el mismo idasig (asignación), basada en la fecha de finalización.
             $novedadesVigentes = Novedades::where('idassig', $request->input('idassig'))
                 ->where('activo', true)
@@ -127,8 +134,11 @@ class NovedadesController extends Controller
                 ]);
 
             }
-            // Crear la nueva novedad si no existe una vigente.
-            $response = Novedades::create($request->validated());
+            // Crear la nueva novedad con los valores generados manualmente
+            $response = Novedades::create(array_merge($request->validated(), [
+                'correlativo' => $nuevoCorrelativo,
+                'nrocorre' => $correlativoFormateado
+            ]));
 
             // Recargar la novedad con la relación para incluir el tipo de novedad
             $response->load('tipoNovedad');

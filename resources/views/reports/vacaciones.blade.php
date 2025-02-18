@@ -20,6 +20,9 @@
         .left {
             text-align: left;
         }
+        .header img {
+            width: 200px;
+        }
         .left h4, .left p {
             margin: 0;
             line-height: 1.5;
@@ -55,9 +58,6 @@
             font-size: 20px;
             font-weight: bold;
         }
-        .header img {
-            width: 200px;
-        }
         table {
             width: 100%;
             border-collapse: collapse;
@@ -89,13 +89,11 @@
             <h4>UNIDAD DE RECURSOS HUMANOS</h4>
         </div>
         <div class="center">
-            <p><em>Fecha de envio: {{ $fecha }}</em></p>
-            <h1>PARTE DEL PERSONAL MILITAR DEL MINISTERIO DE DEFENSA</h1>
-            <p>{{ $user->nomorg }}</p>
+            <p><em>{{ $date }}</em></p>
+            <h1>PLANILLA DE VACACIONES DEL PERSONAL MILITAR</h1>
+            
         </div>
-        <div class="right">
-            <div>{{ $date }}</div>
-        </div>
+      
     </div>
 
     <!-- Título de DEMOSTRACIÓN -->
@@ -106,41 +104,24 @@
     <table>
         <thead>
             <tr>
-                <!-- <th>N°</th> -->
-                <th>DETALLE</th>
-                <th>OF. GENERALES</th>
-                <th>OF. SUPERIORES</th>
-                <th>OF. SUBALTERNOS</th>
-                <th>SUBOFICIALES</th>
-                <th>SARGENTOS</th>
-                <th>CIVIL ADMIN</th>
-                <th>TOTAL</th>
+                <th>N°</th>
+                <th>Grado y Nombre</th>
+                <th>Fuerza</th>
+                <th>Años serv.</th>
+                <th>Dias Vacación</th>
             </tr>
         </thead>
         <tbody>
-            @foreach ($parte as $index => $novedad)
+            @foreach ($personal as $index => $personales)
             <tr>
-                <!-- <td>{{ $index + 1 }}</td> -->
-                <td>{{ $novedad->descripcion }}</td>
-                <td>{{ $novedad->oficiales_generales }}</td>
-                <td>{{ $novedad->oficiales_superiores }}</td>
-                <td>{{ $novedad->oficiales_subalternos }}</td>
-                <td>{{ $novedad->suboficiales }}</td>
-                <td>{{ $novedad->sargentos }}</td>
-                <td>{{ $novedad->civiles }}</td>
-                <td>{{ $novedad->total_general }}</td>
+                <td>{{ $index + 1 }}</td>
+                <td>{{ $personales->name }}</td>
+                <td>{{ $personales->fuerza }}</td>
+                <td>{{ $personales->anios_servicio }}</td>
+                <td>{{ $personales->dias_asignados }}</td>
             </tr>
             @endforeach
         </tbody>
     </table>
-    <!-- Sección de firma -->
-    <div class="signature-section" style="margin-top: 50px; text-align: center;">
-        <p style="margin: 0; font-weight: bold; ">
-            {{ $user->nombre_completo }} 
-        </p>
-        <p style="margin: 0;">
-            {{ $user->nompuesto }}
-        </p>
-    </div>
 </body>
 </html>

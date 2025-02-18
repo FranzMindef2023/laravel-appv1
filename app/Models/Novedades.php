@@ -23,7 +23,9 @@ class Novedades extends Model implements Auditable
         'startdate',
         'enddate',
         'activo',
-        'iduserreg'
+        'iduserreg',
+        'correlativo',
+        'nrocorre'
     ];
     // Relación con el modelo TipoNovedad
     public function tipoNovedad()

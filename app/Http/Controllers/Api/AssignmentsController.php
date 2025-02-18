@@ -171,10 +171,13 @@ class AssignmentsController extends Controller
      */
     public function updateEndDate(Request $request, int $id){
         try {
+            // Verifica que idpersona tiene un valor válido
+            $idpersona = $request->input('idpersona');
             // Validar que se haya proporcionado la nueva fecha de finalización
             $request->validate([
                 'enddate' => 'required|date',
-                'motivofin'=>'nullable|string|max:255'
+                'motivofin'=>'nullable|string|max:255',
+                'code'=>'required|integer',
             ]);
 
             // Buscar la asignación por su ID (idassig)
@@ -187,15 +190,14 @@ class AssignmentsController extends Controller
                 'estado'=>'D'
             ]);
             // Actualizar datos en la tabla Gestiones
-            $gestion = Gestiones::where('idpersona', $request->idpersona)
-                                ->whereNull('fechadesvin') // Filtrar por gestiones activas
-                                ->whereNull('motivofin') // Filtrar por gestiones activas
-                                ->firstOrFail();
-    
-            $gestion->update([
-                'fechadesvin' => $request->input('enddate'),
-                'motivofin' => $request->input('motivofin')
-            ]);
+            $updatedRows = Gestiones::where('idpersona', $idpersona)
+                        ->whereNull('fechadesvin') // Solo gestiones activas
+                        ->whereNull('motivofin')   // Solo gestiones activas
+                        ->update([
+                            'fechadesvin' => $request->input('enddate'),
+                            'motivofin' => $request->input('motivofin'),
+                            'codeac' => $request->input('code')
+                        ]);
             // Retornar una respuesta exitosa con los datos actualizados
             return response()->json([
                 'status' => true,

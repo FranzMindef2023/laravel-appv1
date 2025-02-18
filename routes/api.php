@@ -110,6 +110,7 @@ Route::middleware(['jwt.verify'])->group(function () {
     Route::get('partereportsusers/{iduser}/{fecha}',  [ReportsController::class, 'parteReportsUsers']);
     Route::get('solpermisosrrhh/{iduser}/{fecha}',  [ReportsController::class, 'solPermisosRrhh']);
     Route::get('papeletapermiso/{id}',  [ReportsController::class, 'PapeletaPermiso']);
+   
     
 
 
@@ -131,4 +132,5 @@ Route::middleware(['jwt.verify'])->group(function () {
     Route::get('verificadorvacaciones/{idper}/{idvacacion}', [NovedadesController::class, 'verificadorVacaciones']);
     Route::get('verificadorVacacionesHoras/{idper}/{idvacacion}/{fecha}', [NovedadesController::class, 'verificadorVacacionesHoras']);
     Route::get('verificadorVacacionesDiasVigentes/{idper}/{idvacacion}/{fechini}/{fechfin}', [NovedadesController::class, 'verificadorVacacionesDiasVigentes']);
+    Route::get('planillavacaciones',  [ReportsController::class, 'planillaVacaciones']);
 });

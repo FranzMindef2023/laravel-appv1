@@ -24,6 +24,8 @@ return new class extends Migration
             $table->unsignedBigInteger('iduserreg'); 
             $table->unsignedBigInteger('iduseraut')->nullable();
             $table->unsignedBigInteger('iduserupdate')->nullable();  
+            $table->unsignedBigInteger('correlativo');
+            $table->text('nrocorre');
         
             // Claves foráneas
             $table->foreign('idassig')->references('idassig')->on('assignments')->onDelete('cascade');

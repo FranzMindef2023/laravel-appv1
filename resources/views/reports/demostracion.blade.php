@@ -20,6 +20,9 @@
         .left {
             text-align: left;
         }
+        .header img {
+            width: 200px;
+        }
         .left h4, .left p {
             margin: 0;
             line-height: 1.5;
@@ -81,18 +84,18 @@
 </head>
 <body>
     <div class="header">
+    <img src="{{ asset('minlogo.png') }}" alt="Logo">
         <div class="left">
-            <h4>MINISTERIO DE DEFENSA NACIONAL</h4>
-            <p>UNIDAD DE RECURSOS HUMANOS</p>
+            <h4>UNIDAD DE RECURSOS HUMANOS</h4>
         </div>
         <div class="center">
             <p><em>{{ $date }}</em></p>
             <h1>PARTE DEL PERSONAL MILITAR DEL MINISTERIO DE DEFENSA</h1>
             <p>{{ $user->nomorg }}</p>
         </div>
-        <div class="right">
+        <!-- <div class="right">
             <div class="circle">{{ $novedades->count() }}</div>
-        </div>
+        </div> -->
     </div>
 
     <!-- Título de DEMOSTRACIÓN -->

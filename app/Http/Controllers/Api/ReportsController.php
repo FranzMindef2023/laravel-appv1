@@ -188,6 +188,75 @@ class ReportsController extends Controller
             ], 500);
         }
     }
+    //planilla de generacion de vacaciones
+    public function planillaVacaciones() {
+        try {
+            // Obtener la gestión actual (año actual)
+            $gestion_actual = Carbon::now()->year;
+            $personas = DB::table('personas')
+                ->leftJoin('fuerzas', 'personas.idfuerza', '=', 'fuerzas.idfuerza')
+                ->leftJoin('especialidades', 'personas.idespecialidad', '=', 'especialidades.idespecialidad')
+                ->leftJoin('grados', 'personas.idgrado', '=', 'grados.idgrado')
+                ->leftJoin('sexos', 'personas.idsexo', '=', 'sexos.idsexo')
+                ->leftJoin('armas', 'personas.idarma', '=', 'armas.idarma')
+                ->leftJoin('statuscvs', 'personas.idcv', '=', 'statuscvs.idcv')
+                ->leftJoin('assignments', 'personas.idpersona', '=', 'assignments.idpersona')
+                ->leftJoin('organizacion', 'assignments.idorg', '=', 'organizacion.idorg')
+                ->leftJoin('puestos', 'assignments.idpuesto', '=', 'puestos.idpuesto')
+                ->leftJoin('asignacion_vacaciones', 'personas.idpersona', '=', 'asignacion_vacaciones.idpersona')
+                ->select(
+                    'personas.idpersona as id',
+                    'asignacion_vacaciones.*',
+                    'fuerzas.fuerza as fuerza',
+                    'especialidades.especialidad as especialidad',
+                    'grados.grado as grado',
+                    'grados.abregrado',
+                    'sexos.sexo as sexo',
+                    'armas.arma as arma',
+                    'statuscvs.name as status_civil',
+                    'organizacion.nomorg as organizacion',
+                    'puestos.nompuesto as puesto',
+                    DB::raw("
+                        CASE
+                            WHEN grados.categoria = 'OG' THEN CONCAT(grados.abregrado, ' ', personas.appaterno, ' ', personas.apmaterno, ' ', personas.nombres)
+                            WHEN personas.idarma = 1 AND personas.idespecialidad != 1 THEN CONCAT(grados.abregrado, ' ', especialidades.especialidad, ' ', personas.appaterno, ' ', personas.apmaterno, ' ', personas.nombres)
+                            WHEN personas.idarma != 1 AND personas.idespecialidad = 1 THEN CONCAT(grados.abregrado, ' ', armas.abrearma, ' ', personas.appaterno, ' ', personas.apmaterno, ' ', personas.nombres)
+                            WHEN personas.idarma = 1 AND personas.idespecialidad = 1 THEN CONCAT(grados.abregrado, ' ', personas.appaterno, ' ', personas.apmaterno, ' ', personas.nombres)
+                            ELSE CONCAT(grados.abregrado, ' ', especialidades.especialidad, ' ', personas.appaterno, ' ', personas.apmaterno, ' ', personas.nombres)
+                        END AS name
+                    "),
+                    DB::raw("TO_CHAR(personas.fechnacimeinto, 'DD-MM-YYYY') as fechnacimeinto"),
+                    DB::raw("TO_CHAR(personas.fechaegreso, 'DD-MM-YYYY') as fechaegreso"),
+                    DB::raw("CAST(personas.ci AS TEXT) AS ci"),
+                    DB::raw("CAST(personas.celular AS TEXT) AS celular"),
+                    DB::raw("DATE_PART('year', AGE(personas.fechnacimeinto)) AS edad"),
+                    DB::raw("EXTRACT(YEAR FROM AGE(CURRENT_DATE, fechaegreso)) as anios"),
+                    DB::raw("(EXTRACT(MONTH FROM AGE(CURRENT_DATE, fechaegreso)) * 30 + 
+                                EXTRACT(DAY FROM AGE(CURRENT_DATE, fechaegreso))) as dias")
+                )
+                ->whereNull('assignments.enddate')
+                ->whereNull('assignments.motivofin')
+                ->where('assignments.estado','A')
+                ->where('asignacion_vacaciones.gestion',$gestion_actual)
+                ->orderBy('personas.idgrado', 'asc')
+                ->get();
+    
+            // Verificar si no se encontraron personas
+            if ($personas->isEmpty()) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'No se encontraron personas activas.'
+                ], 404);
+            }
+
+            return $this->generatePlanilla($personas);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Error al obtener las novedades: ' . $e->getMessage()
+            ], 500);
+        }
+    }
     private function generateDemostracion($novedades,$users) {
         // Obtener la fecha actual en formato adecuado
         $currentDate = Carbon::now()->locale('es')->isoFormat('LL'); // Ejemplo: "20 de enero de 2025"
@@ -207,7 +276,24 @@ class ReportsController extends Controller
         // Retornar el PDF generado
         return $pdf->download('demostracion.pdf');
     }
+    private function generatePlanilla($personas) {
+        // Obtener la fecha actual en formato adecuado
+        $currentDate = Carbon::now()->locale('es')->isoFormat('LL'); // Ejemplo: "20 de enero de 2025"
 
+        // Datos que pasarás a la vista
+        $data = [
+            'title' => 'Demostración',
+            'personal' => $personas,
+            'date' => "La Paz, $currentDate", // Fecha dinámica
+        ];
+
+        // Generar el PDF utilizando DomPDF
+        $pdf = app(PDF::class);
+        $pdf->loadView('reports.vacaciones', $data);
+
+        // Retornar el PDF generado
+        return $pdf->download('vacaciones.pdf');
+    }
     public function parteReportsGeneral($iduser, $date)
     {
         try {
@@ -358,7 +444,7 @@ class ReportsController extends Controller
                 ], 404);
             }
             // return $results;
-            return $this->generateParteGeneral($results,$users);
+            return $this->generateParteGeneral($results,$users,$date);
             // return response()->json([
             //     'status' => true,
             //     'message' => 'Reporte generado correctamente.',
@@ -526,7 +612,7 @@ class ReportsController extends Controller
                 ], 404);
             }
             // return $results;
-            return $this->generateParteGeneral($results,$users);
+            return $this->generateParteGeneral($results,$users,$date);
             // return response()->json([
             //     'status' => true,
             //     'message' => 'Reporte generado correctamente.',
@@ -539,17 +625,17 @@ class ReportsController extends Controller
             ], 500);
         }
     }
-
-    private function generateParteGeneral($results,$users){
+    private function generateParteGeneral($results,$users,$date){
         // Obtener la fecha actual en formato adecuado
         $currentDate = Carbon::now()->locale('es')->isoFormat('LL'); // Ejemplo: "20 de enero de 2025"
-
+        $formattedDate = Carbon::parse($date)->format('d/m/y'); // Formato dd/mm/YY
         // Datos que pasarás a la vista
         $data = [
             'title' => 'Demostración',
             'parte' => collect($results), // Convertir a colección
             'date' => "La Paz, $currentDate", // Fecha dinámica,
-            'user'=>$users
+            'user'=>$users,
+            'fecha'=>$formattedDate
         ];
         
 
@@ -640,6 +726,4 @@ class ReportsController extends Controller
         // Retornar el PDF generado
         return $pdf->download('papeleta.pdf');
     }
-
-   
 }

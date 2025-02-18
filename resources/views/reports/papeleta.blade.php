@@ -26,7 +26,7 @@
         }
 
         .header img {
-            width: 80px;
+            width: 200px;
         }
 
         .title {
@@ -96,7 +96,7 @@
     <div class="boleta-container">
         <!-- Contenido superior -->
         <div class="header">
-            <img src="https://sistemas.mindef.gob.bo/assets/img/portfolio/logo2.jpg" alt="Logo">
+        <img src="{{ asset('minlogo.png') }}" alt="Logo">
             <div class="title">
                 <h1>Solicitud de Permiso</h1>
                 <p>{{$data->tipo_novedad}}</p>
@@ -104,8 +104,8 @@
         </div>
 
         <div class="right-text">
-            <p>No. 27003</p>
-            <p>Copia Interesado</p>
+            <p>No. {{$data->nrocorre}}</p>
+            <p>Copia RRHH</p>
         </div>
 
         <div class="info">
@@ -113,7 +113,7 @@
             <p><strong>Nombre:</strong> {{$data->nombre_completo}}</p>
             <p><strong>Cargo:</strong> {{$data->puesto}}</p>
             <p><strong>Repartición:</strong> {{$data->organizacion}}</p>
-            <p><strong>Fecha Impresión:</strong> 27/11/2024</p>
+            <p><strong>Fecha Impresión:</strong> {{$date}}</p>
         </div>
 
         <table class="details">
@@ -159,17 +159,17 @@
 
         <!-- Contenido duplicado abajo -->
         <div class="header">
-            <img src="logo.png" alt="Logo">
+        <img src="{{ asset('minlogo.png') }}" alt="Logo">
             <div class="title">
                 <h1>Solicitud de Permiso</h1>
                 <p>{{$data->tipo_novedad}}</p>
             </div>
         </div>
 
-        <div class="right-text">
+        <!-- <div class="right-text">
             <p>No. 27003</p>
             <p>Copia Interesado</p>
-        </div>
+        </div> -->
 
         <div class="info">
             <p><strong>Código:</strong> {{$data->ci}}</p>

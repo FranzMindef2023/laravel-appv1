@@ -92,4 +92,9 @@ CREAR CONTROLADORES DESDE EL TERMINAL
 ejecuta la sembradora con el siguiente comando:
 ## php artisan db:seed --class=TipoNovedadSeeder
 
+##  habilitar la extensión GD
+## sudo apt-get update
+## sudo apt-get install php8.2-gd
+## sudo systemctl restart apache2
+## php -m | grep gd
 */
